@@ -117,18 +117,6 @@ export default function LoginPage() {
             </svg>
             Continue with Google
           </button>
-
-          <p className="mt-6 text-center text-xs text-zinc-500">
-            By continuing you agree to our{" "}
-            <a className="underline decoration-dotted underline-offset-4" href="#">
-              Terms
-            </a>{" "}
-            and{" "}
-            <a className="underline decoration-dotted underline-offset-4" href="#">
-              Privacy Policy
-            </a>
-            .
-          </p>
         </div>
       </div>
     </main>
