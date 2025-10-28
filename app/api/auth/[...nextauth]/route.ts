@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
@@ -19,14 +19,19 @@ export const runtime = "nodejs";
  */
 
 
-const handler = NextAuth({
-   // JWT sessions (keeps things simple)
+/**
+ * Exported so other API routes can call:
+ *   const session = await getServerSession(authOptions)
+ */
+export const authOptions: NextAuthOptions = {
+
   session: { strategy: "jwt" },
-   // Stores stuff in MongoDB
   adapter: MongoDBAdapter(clientPromise),
+
   pages: { signIn: "/login" },
+
+
   providers: [
-    // OAuth with google (one of auth.js' providers (spotify is too (soundcloud isn't so we will have to route/config ourseleves))
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -59,6 +64,21 @@ const handler = NextAuth({
       },
     }),
   ],
-});
 
+  callbacks: {
+    /**
+     * Ensure session.user.id is present
+     * NextAuth puts the user id in JWT; we need it 4 our sessions.
+     */
+    async session({ session, token }) {
+      if (session.user && token.sub) (session.user as any).id = token.sub;
+      return session;
+    },
+  },
+};
+
+// Build the handler for all /api/auth/* requests
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
+
+
