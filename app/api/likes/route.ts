@@ -1,10 +1,19 @@
-import { NextResponse } from "next/server";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { ensureIndexes } from "@/lib/ensure-indexes";
+import { db } from "@/lib/mongodb";
+import { LikeTargetSchema } from "@/lib/validation";
 import { ObjectId } from "mongodb";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/mongodb";
-import { ensureIndexes } from "@/lib/ensure-indexes";
-import { LikeTargetSchema } from "@/lib/validation";
+import { NextResponse } from "next/server";
+
+/**
+ * Docs:
+ * - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
+ * - getServerSession in Route Handlers: https://authjs.dev/reference/nextjs#server-components--route-handlers
+ * - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ */
+
+
 
 export const runtime = "nodejs";
 

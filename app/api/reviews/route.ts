@@ -5,6 +5,17 @@ import { db } from "@/lib/mongodb";
 import { ensureIndexes } from "@/lib/ensure-indexes";
 import { PageSchema, ReviewCreateSchema } from "@/lib/validation";
 
+
+/**
+ * Docs:
+ * - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
+ * - Input validation with Zod: https://zod.dev/
+ * - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ * - createIndexes: https://www.mongodb.com/docs/drivers/node/current/indexes/
+ */
+
+
+
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
