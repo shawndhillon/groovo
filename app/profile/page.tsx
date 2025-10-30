@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import UserHeader from "@/app/profile/UserHeader";
 import SavedAlbumsGrid from "@/app/profile/SavedAlbumsGrid";
 
@@ -119,8 +120,14 @@ export default function ProfilePage() {
       {/* Header with brand */}
       <div className="mx-auto max-w-7xl px-6 py-6">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-violet-500" />
-          <span className="text-lg font-semibold tracking-tight">Groovo</span>
+          <Link href="/">
+            <div className="h-6 w-6 rounded-md bg-violet-500" />
+          </Link>
+          <Link href="/">
+            <span className="text-lg font-semibold tracking-tight hover:text-violet-400 transition">
+              Groovo
+            </span>
+          </Link>
         </div>
       </div>
 

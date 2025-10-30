@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface SavedAlbum {
   id: string;
   name: string;
@@ -70,8 +72,9 @@ export default function SavedAlbumsGrid({ albums, loading, error }: SavedAlbumsG
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
       {albums.map((album) => (
-        <div
+        <Link
           key={album.id}
+          href={`/album/${album.id}`}
           className="group rounded-lg bg-zinc-800 p-2 hover:bg-zinc-700 transition-all duration-200"
         >
           {/* Album Artwork */}
@@ -105,7 +108,7 @@ export default function SavedAlbumsGrid({ albums, loading, error }: SavedAlbumsG
               </p>
             )}
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );
