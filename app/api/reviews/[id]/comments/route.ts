@@ -1,14 +1,27 @@
-import { NextResponse } from "next/server";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { ensureIndexes } from "@/lib/ensure-indexes";
+import { db } from "@/lib/mongodb";
+import { CommentCreateSchema, PageSchema } from "@/lib/validation";
 import { ObjectId } from "mongodb";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/mongodb";
-import { ensureIndexes } from "@/lib/ensure-indexes";
-import { CommentCreateSchema, PageSchema } from "@/lib/validation";
+import { NextResponse } from "next/server";
+
+
+/**
+ * Docs:
+ * - Next.js Dynamic Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
+ * - Dynamic route params: https://nextjs.org/docs/messages/sync-dynamic-apis
+ * - Input validation with Zod: https://zod.dev/
+ * - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ */
+
+
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+type Ctx = { params: Promise<{ id: string }> };
+
+export async function POST(req: Request, { params }: Ctx) {
   await ensureIndexes();
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,8 +29,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const parsed = CommentCreateSchema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });
 
+  const { id } = await params;
   const database = await db();
-  const reviewId = new ObjectId(params.id);
+  const reviewId = new ObjectId(id);
+
   const review = await database.collection("reviews").findOne({ _id: reviewId, deletedAt: null });
   if (!review) return NextResponse.json({ error: "Review not found" }, { status: 404 });
 
@@ -56,17 +71,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   return NextResponse.json({ id: String(res.insertedId) }, { status: 201 });
 }
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: Ctx) {
   await ensureIndexes();
   const url = new URL(req.url);
-
   const page = PageSchema.parse({
     page: url.searchParams.get("page") ?? undefined,
     pageSize: url.searchParams.get("pageSize") ?? undefined,
   });
 
+  const { id } = await params;
   const database = await db();
-  const reviewId = new ObjectId(params.id);
+  const reviewId = new ObjectId(id);
 
   const items = await database.collection("comments")
     .find({ reviewId: String(reviewId), parentId: null, deletedAt: null })

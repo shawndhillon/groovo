@@ -98,8 +98,14 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
       <div className="mx-auto max-w-7xl px-6 py-6">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-violet-500" />
-          <span className="text-lg font-semibold tracking-tight">Groovo</span>
+          <Link href="/">
+            <div className="h-6 w-6 rounded-md bg-violet-500" />
+          </Link>
+          <Link href="/">
+            <span className="text-lg font-semibold tracking-tight hover:text-violet-400 transition">
+              Groovo
+            </span>
+          </Link>
         </div>
       </div>
 
