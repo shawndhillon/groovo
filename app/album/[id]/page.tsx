@@ -1,5 +1,6 @@
 "use client";
 
+import AddToLibraryButton from "@/app/components/AddToLibraryButton";
 import { useState, useEffect } from "react";
 import Header from "../../components/Header";
 import AlbumHeader from "./AlbumHeader";
@@ -21,7 +22,14 @@ export default function AlbumPage({ params }: AlbumPageProps) {
   const { album, isLoading, error } = useAlbum(albumId ?? "");
 
   if (!albumId) return null;
-
+  const libraryPayload = album
+  ? {
+      id: album.id,
+      title: album.name,
+      coverUrl: album.images?.[0]?.url,
+      artists: (album.artists ?? []).map((a) => a.name),
+    }
+  : null;
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
       <Header />
@@ -36,6 +44,11 @@ export default function AlbumPage({ params }: AlbumPageProps) {
             <div className="grid grid-cols-[1fr_0.4fr] gap-6 items-start">
               <div className="w-full">
                 <AlbumHeader album={album} />
+                {libraryPayload && (
+                  <div className="mt-4">
+                    <AddToLibraryButton album={libraryPayload} />
+                    </div>
+                  )}
               </div>
               <div className="w-full max-w-sm">
                 <CompactTracklist
