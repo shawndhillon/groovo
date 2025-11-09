@@ -64,8 +64,6 @@ export default function ProfilePage() {
     });
   }, [reviews]);
 
-
-
   // 1) Loading view
   if (isUserLoading) {
     return (
