@@ -21,7 +21,7 @@ export default function Discover() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
-      <Header />
+      <Header showSearch={false} />
       <div className="mx-auto max-w-7xl px-6 py-6">
         <h1 className="text-2xl font-bold mb-4">Discover Music</h1>
         <input

@@ -28,7 +28,7 @@ export default function CompactTracklist({
     <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 shadow-2xl backdrop-blur">
       <h2 className="text-xl font-semibold mb-3">{title}</h2>
 
-      <div className="max-h-96 overflow-y-auto space-y-1 pr-2" role="list">
+      <div className="max-h-65 overflow-y-auto space-y-1 pr-2" role="list">
         {tracks.slice(0, limit).map((track, idx) => (
           <div
             key={track.id}

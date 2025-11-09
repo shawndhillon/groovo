@@ -4,7 +4,11 @@ import Link from "next/link";
 import SearchBar from "./SearchBar";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
-export default function Header() {
+interface HeaderProps {
+  showSearch?: boolean;
+}
+
+export default function Header({showSearch = true}: HeaderProps) {
   const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const isLoggedIn = !!currentUser;
 
@@ -18,7 +22,9 @@ export default function Header() {
         </div>
 
         {/* Search Bar */}
-        <SearchBar />
+        {showSearch && (
+          <SearchBar />
+        )}
 
         {/* Right side auth area */}
         <div className="flex items-center gap-4">
