@@ -25,7 +25,8 @@ export type CommentItem = {
   likeCount: number;
   replyCount: number;
   createdAt: string;
-  user?: { id?: string; username?: string; image?: string } | null; 
+  user?: { id?: string; username?: string | null; name?: string | null; image?: string | null } | null;
+  viewerLiked?: boolean;
 };
 
 export async function fetchComments(reviewId: string, page = 1, pageSize = 20) {

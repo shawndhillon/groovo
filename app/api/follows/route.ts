@@ -34,17 +34,18 @@ export async function POST(req: Request) {
 
   if (action === "follow") {
     try {
-
       await follows.insertOne({
         followerId,
         followingId: targetUserId,
         targetUserId,
         createdAt: new Date(),
       } as any);
-      return NextResponse.json({ following: true }, { headers: { "Cache-Control": "no-store" } });
+      const followersCount = await follows.countDocuments({ targetUserId });
+      return NextResponse.json({ following: true, followersCount }, { headers: { "Cache-Control": "no-store" } });
     } catch (e: any) {
       if (e?.code === 11000) {
-        return NextResponse.json({ following: true }, { headers: { "Cache-Control": "no-store" } });
+        const followersCount = await follows.countDocuments({ targetUserId });
+        return NextResponse.json({ following: true, followersCount }, { headers: { "Cache-Control": "no-store" } });
       }
       return NextResponse.json({ error: "Failed to follow" }, { status: 500, headers: { "Cache-Control": "no-store" } });
     }
@@ -53,7 +54,8 @@ export async function POST(req: Request) {
       followerId,
       $or: [{ targetUserId }, { followingId: targetUserId }],
     });
-    return NextResponse.json({ following: false }, { headers: { "Cache-Control": "no-store" } });
+    const followersCount = await follows.countDocuments({ targetUserId });
+    return NextResponse.json({ following: false, followersCount }, { headers: { "Cache-Control": "no-store" } });
   }
 }
 

@@ -42,6 +42,8 @@ export default function NewReleases() {
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [feedMode, setFeedMode] = useState<"following" | "global">("following");
+  const [fetchedUserIds, setFetchedUserIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch("/api/new-album-releases?market=US&limit=5")
@@ -56,7 +58,11 @@ export default function NewReleases() {
       setFeedLoading(true);
       setFeedError(null);
       try {
-        const r = await fetch("/api/feed?page=1&pageSize=20", {
+        const url = feedMode === "global"
+          ? "/api/reviews?global=true&page=1&pageSize=20"
+          : "/api/feed?page=1&pageSize=20";
+
+        const r = await fetch(url, {
           headers: { Accept: "application/json" },
           cache: "no-store",
         });
@@ -72,6 +78,8 @@ export default function NewReleases() {
           if (!cancelled) {
             setIsAuthed(true);
             setFeed(Array.isArray(j?.items) ? (j.items as FeedItem[]) : []);
+            // Reset fetched user IDs when feed changes
+            setFetchedUserIds(new Set());
           }
         }
       } catch (e: any) {
@@ -83,15 +91,19 @@ export default function NewReleases() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [feedMode]);
 
 
   useEffect(() => {
+    // Only fetch users that we haven't fetched yet and don't have username
     const missing = Array.from(
       new Set(
         feed
-          .filter((r) => !r.author?.username)
-          .map((r) => (r.author?.id || r.userId))
+          .filter((r) => {
+            const uid = (r.author?.id || r.userId) as string;
+            return uid && !r.author?.username && !fetchedUserIds.has(uid);
+          })
+          .map((r) => (r.author?.id || r.userId) as string)
           .filter(Boolean)
       )
     );
@@ -110,6 +122,13 @@ export default function NewReleases() {
         const byId = new Map<string, BatchUser>();
         (data.items || []).forEach((u) => byId.set(u.id, u));
         if (cancelled) return;
+
+        // Mark these user IDs as fetched
+        setFetchedUserIds((prev) => {
+          const next = new Set(prev);
+          missing.forEach((id) => next.add(id));
+          return next;
+        });
 
         setFeed((prev) =>
           prev.map((r) => {
@@ -134,7 +153,7 @@ export default function NewReleases() {
     return () => {
       cancelled = true;
     };
-  }, [feed]);
+  }, [feed, fetchedUserIds]);
   const cover = (snap?: FeedItem["albumSnapshot"]) =>
     (Array.isArray(snap?.images) && snap!.images[0]?.url) || "/placeholder-album.png";
 
@@ -191,7 +210,33 @@ export default function NewReleases() {
         )}
       </div>
       <div className="mx-auto max-w-7xl px-6 pb-16">
-        <h2 className="text-xl font-semibold">Your Feed</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Your Feed</h2>
+          {isAuthed && (
+            <div className="flex items-center gap-2 rounded-lg bg-zinc-800/60 p-1 border border-white/10">
+              <button
+                onClick={() => setFeedMode("following")}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  feedMode === "following"
+                    ? "bg-violet-600 text-white"
+                    : "text-zinc-300 hover:text-white"
+                }`}
+              >
+                Following
+              </button>
+              <button
+                onClick={() => setFeedMode("global")}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  feedMode === "global"
+                    ? "bg-violet-600 text-white"
+                    : "text-zinc-300 hover:text-white"
+                }`}
+              >
+                Global
+              </button>
+            </div>
+          )}
+        </div>
 
         {feedLoading && <div className="mt-4 text-sm text-zinc-400">Loading your feed…</div>}
 
@@ -267,6 +312,7 @@ export default function NewReleases() {
                   <CommentSection
                     reviewId={getReviewId(r)}
                     reviewLikeCount={Number((r as any).likeCount || 0)}
+                    reviewInitiallyLiked={!!(r as any).viewerLiked}
                     initialOpen={true}
                   />
                 </li>

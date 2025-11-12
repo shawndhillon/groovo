@@ -31,9 +31,14 @@ export default function Header({showSearch = true}: HeaderProps) {
           {isUserLoading ? (
             <span className="text-sm text-zinc-500">…</span>
           ) : isLoggedIn ? (
-            <Link href="/profile" className="text-sm text-zinc-400 hover:text-white transition">
-              Profile
-            </Link>
+            <>
+              <Link href="/profile" className="text-sm text-zinc-400 hover:text-white transition">
+                Profile
+              </Link>
+              <Link href="/api/auth/signout" className="text-sm text-zinc-400 hover:text-white transition">
+                Sign out
+              </Link>
+            </>
           ) : (
             <>
               <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition">Login</Link>

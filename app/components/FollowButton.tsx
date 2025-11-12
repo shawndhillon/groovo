@@ -6,17 +6,20 @@ import { useState } from "react";
 type FollowButtonProps = {
   targetUserId: string;
   initialFollowing: boolean;
-  onChange?: (next: { following: boolean }) => void;
+  initialFollowersCount?: number;
+  onChange?: (next: { following: boolean; followersCount: number }) => void;
   className?: string;
 };
 
 export default function FollowButton({
   targetUserId,
   initialFollowing,
+  initialFollowersCount = 0,
   onChange,
   className = "",
 }: FollowButtonProps) {
   const [following, setFollowing] = useState<boolean>(initialFollowing);
+  const [followersCount, setFollowersCount] = useState<number>(initialFollowersCount);
   const [busy, setBusy] = useState(false);
 
   async function toggle() {
@@ -40,10 +43,13 @@ export default function FollowButton({
       const j = await res.json().catch(() => ({}));
       if (!res.ok || typeof j?.following !== "boolean") {
         setFollowing(!next);
+        setFollowersCount(initialFollowersCount);
         return;
       }
       setFollowing(j.following);
-      onChange?.({ following: j.following });
+      const newCount = typeof j?.followersCount === "number" ? j.followersCount : followersCount + (next ? 1 : -1);
+      setFollowersCount(newCount);
+      onChange?.({ following: j.following, followersCount: newCount });
     } finally {
       setBusy(false);
     }

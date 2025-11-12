@@ -38,12 +38,11 @@ export async function GET(req: Request) {
   const followedIds = new Set<string>();
   for (const row of followRows) {
     if (row?.targetUserId) followedIds.add(String(row.targetUserId));
-    else if (row?.followingId) followedIds.add(String(row.followingId));
+    if (row?.followingId) followedIds.add(String(row.followingId));
   }
   followedIds.add(session.user.id);
 
   const authorIds = Array.from(followedIds);
-
 
   const items = await reviews
     .find({ userId: { $in: authorIds }, deletedAt: null })
@@ -83,14 +82,37 @@ export async function GET(req: Request) {
     });
   }
 
+  // Check which reviews/comments the user has liked
+  const reviewIds = items.map((r) => String(r._id));
+  const likes = await database.collection("likes")
+    .find({
+      targetType: "review",
+      targetId: { $in: reviewIds },
+      userId: session.user.id,
+    })
+    .toArray();
+
+  const likedReviewIds = new Set(likes.map((l) => l.targetId));
+
   const out = items.map((r) => ({
-    ...r,
+    _id: String(r._id),
+    id: String(r._id),
+    userId: r.userId,
+    albumId: r.albumId,
+    rating: r.rating,
+    body: r.body,
+    likeCount: r.likeCount ?? 0,
+    commentCount: r.commentCount ?? 0,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    albumSnapshot: r.albumSnapshot ?? null,
     author: {
       id: r.userId,
       username: byId.get(String(r.userId))?.username ?? null,
       name: byId.get(String(r.userId))?.name ?? null,
       image: byId.get(String(r.userId))?.image ?? null,
     },
+    viewerLiked: likedReviewIds.has(String(r._id)),
   }));
 
   return NextResponse.json({ items: out });

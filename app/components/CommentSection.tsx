@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CommentItem, fetchComments, postComment } from "@/app/utils/social";
 import LikeButton from "@/app/components/LikeButton";
+import { CommentItem, fetchComments, postComment } from "@/app/utils/social";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 function byParent(top: CommentItem[], replies: CommentItem[]) {
   const map = new Map<string, CommentItem[]>();
@@ -120,51 +120,19 @@ export default function CommentSection({
                 <div className="text-sm text-zinc-400">No comments yet.</div>
               ) : (
                 <ul className="space-y-4">
-                  {items.map((c) => {
-                    const child = repliesByParent.get(String(c._id)) || [];
-                    return (
-                      <li key={String(c._id)} className="rounded-xl bg-zinc-900/70 p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="text-xs text-zinc-400">
-                            {new Date(c.createdAt).toLocaleString()}
-                          </div>
-                          <LikeButton
-                            targetType="comment"
-                            targetId={String(c._id)}
-                            initialCount={c.likeCount || 0}
-                          />
-                        </div>
-                        <p className="mt-2 text-sm text-zinc-100 whitespace-pre-wrap">{c.body}</p>
-
-                        {/* Quick reply */}
-                        <InlineReply reviewId={reviewId} parentId={String(c._id)} onAfter={async () => {
-                          const { items, replies } = await fetchComments(reviewId, 1, 20);
-                          setItems(items);
-                          setReplies(replies);
-                        }} />
-
-                        {child.length > 0 && (
-                          <ul className="mt-3 space-y-2 border-l border-white/10 pl-3">
-                            {child.map((r) => (
-                              <li key={String(r._id)} className="rounded-lg bg-zinc-900/60 p-2">
-                                <div className="flex items-center justify-between">
-                                  <div className="text-xs text-zinc-400">
-                                    {new Date(r.createdAt).toLocaleString()}
-                                  </div>
-                                  <LikeButton
-                                    targetType="comment"
-                                    targetId={String(r._id)}
-                                    initialCount={r.likeCount || 0}
-                                  />
-                                </div>
-                                <p className="mt-1 text-sm text-zinc-100 whitespace-pre-wrap">{r.body}</p>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  })}
+                  {items.map((c) => (
+                    <CommentItemComponent
+                      key={String(c._id)}
+                      comment={c}
+                      reviewId={reviewId}
+                      repliesByParent={repliesByParent}
+                      onRefresh={async () => {
+                        const { items, replies } = await fetchComments(reviewId, 1, 20);
+                        setItems(items);
+                        setReplies(replies);
+                      }}
+                    />
+                  ))}
                 </ul>
               )}
             </>
@@ -172,6 +140,76 @@ export default function CommentSection({
         </div>
       )}
     </div>
+  );
+}
+
+function CommentItemComponent({
+  comment,
+  reviewId,
+  repliesByParent,
+  onRefresh,
+  depth = 0,
+}: {
+  comment: CommentItem;
+  reviewId: string;
+  repliesByParent: Map<string, CommentItem[]>;
+  onRefresh: () => Promise<void>;
+  depth?: number;
+}) {
+  const child = repliesByParent.get(String(comment._id)) || [];
+  // Nested comment thread depth
+  const maxDepth = 10;
+
+  const displayName = comment.user?.username || comment.user?.name || "Anonymous";
+  const userId = comment.userId;
+
+  return (
+    <li className={`rounded-xl ${depth === 0 ? 'bg-zinc-900/70 p-3' : 'bg-zinc-900/50 p-2'}`}>
+      <div className="flex items-center justify-between">
+        <div className="inline-flex items-center gap-2 rounded-full bg-zinc-800/80 px-3 py-1.5 border border-white/10">
+          <Link
+            href={`/profile/user/${userId}`}
+            className="text-xs font-medium text-zinc-200 hover:text-violet-300 transition-colors"
+          >
+            {displayName}
+          </Link>
+          <span className="text-xs text-zinc-500">•</span>
+          <span className="text-xs text-zinc-400">{new Date(comment.createdAt).toLocaleString()}</span>
+        </div>
+        <LikeButton
+          targetType="comment"
+          targetId={String(comment._id)}
+          initialLiked={comment.viewerLiked || false}
+          initialCount={comment.likeCount || 0}
+        />
+      </div>
+      <p className="mt-2 text-sm text-zinc-100 whitespace-pre-wrap">{comment.body}</p>
+
+      {/* Reply button - show for all comments */}
+      {depth < maxDepth && (
+        <InlineReply
+          reviewId={reviewId}
+          parentId={String(comment._id)}
+          onAfter={onRefresh}
+        />
+      )}
+
+      {/* Recursively render nested replies */}
+      {child.length > 0 && (
+        <ul className="mt-3 space-y-2 border-l border-white/10 pl-3">
+          {child.map((r) => (
+            <CommentItemComponent
+              key={String(r._id)}
+              comment={r}
+              reviewId={reviewId}
+              repliesByParent={repliesByParent}
+              onRefresh={onRefresh}
+              depth={depth + 1}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
   );
 }
 

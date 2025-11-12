@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import Header from "@/app/components/Header";
-import TopFiveFavoritesView from "@/app/profile/TopFiveFavoritesView";
-import SavedAlbumsGrid, { SavedAlbum } from "@/app/profile/SavedAlbumsGrid";
 import FollowButton from "@/app/components/FollowButton";
+import Header from "@/app/components/Header";
+import { useUserReviews } from "@/app/hooks/useUserReviews";
+import SavedAlbumsGrid, { SavedAlbum } from "@/app/profile/SavedAlbumsGrid";
+import TopFiveFavoritesView from "@/app/profile/TopFiveFavoritesView";
+import { useEffect, useMemo, useState } from "react";
 
 type Params = { id: string };
 type PageProps = { params: Promise<Params> };
@@ -37,6 +37,12 @@ export default function OtherUserProfilePage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+  const {
+    items: reviews,
+    loading: reviewsLoading,
+    error: reviewsError,
+  } = useUserReviews(targetId || null);
+
   useEffect(() => {
     let mounted = true;
     params.then(({ id }) => {
@@ -57,7 +63,7 @@ export default function OtherUserProfilePage({ params }: PageProps) {
       setErr(null);
       try {
         const res = await fetch(`/api/users/${targetId}`, {
-          cache: "no-store",        
+          cache: "no-store",
           headers: { Accept: "application/json" },
           credentials: "include",
         });
@@ -76,6 +82,38 @@ export default function OtherUserProfilePage({ params }: PageProps) {
     };
   }, [targetId]);
 
+  // Map reviews
+  const albumsForGrid: SavedAlbum[] = useMemo(() => {
+    return (reviews || []).map((r) => {
+      // prefer albumSnapshot; fallback to legacy album
+      const snap = r.albumSnapshot ?? (r as any).album ?? {};
+
+      const name = typeof snap.name === "string" && snap.name.trim() ? snap.name : "Unknown";
+      const artists =
+        Array.isArray(snap.artists) && snap.artists.length > 0
+          ? snap.artists
+          : [{ id: "unknown", name: "Unknown Artist" }];
+
+      const images =
+        Array.isArray(snap.images) && snap.images.length > 0
+          ? snap.images
+          : [{ url: "/placeholder-album.png", width: 640, height: 640 }];
+
+      return {
+        id: r.albumId,
+        name,
+        artists,
+        images,
+        review: {
+          rating: r.rating,
+          reviewText: r.body,
+          createdAt: r.createdAt,
+        },
+        savedAt: r.createdAt,
+      } as SavedAlbum;
+    });
+  }, [reviews]);
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
       <Header />
@@ -91,11 +129,19 @@ export default function OtherUserProfilePage({ params }: PageProps) {
             {/* Header card */}
             <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-6">
               <div className="flex items-start gap-4">
-                <img
-                  src={profile.image || "/avatar.svg"}
-                  alt={profile.username ?? "avatar"}
-                  className="h-16 w-16 rounded-full object-cover bg-zinc-800"
-                />
+                {profile.image ? (
+                  <img
+                    src={profile.image}
+                    alt={profile.username ?? "avatar"}
+                    className="h-16 w-16 rounded-full object-cover border-2 border-violet-500/20"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-violet-500/20 flex items-center justify-center border-2 border-violet-500/20">
+                    <span className="text-2xl font-semibold text-violet-400">
+                      {(profile.name || profile.username || "U")[0].toUpperCase()}
+                    </span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -147,8 +193,23 @@ export default function OtherUserProfilePage({ params }: PageProps) {
             <section className="mt-8">
               <TopFiveFavoritesView
                 userId={profile.id}
-                title={`${profile.username ? "@" + profile.username : "User"}’s Top 5`}
+                title={`${profile.username ? "@" + profile.username : "User"}'s Top 5`}
                 isOwner={profile.viewer.isSelf}
+              />
+            </section>
+
+            {/* Reviews section - read-only view matching own profile format */}
+            <section className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">
+                {profile.viewer.isSelf ? "My Reviews" : `${profile.username ? "@" + profile.username : "User"}'s Reviews`}
+              </h2>
+              <SavedAlbumsGrid
+                albums={albumsForGrid}
+                loading={reviewsLoading}
+                error={reviewsError}
+                emptyAs="reviews"
+                showRating
+                showSnippet
               />
             </section>
 

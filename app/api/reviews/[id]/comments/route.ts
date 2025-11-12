@@ -83,6 +83,9 @@ export async function GET(req: Request, { params }: Ctx) {
   const database = await db();
   const reviewId = new ObjectId(id);
 
+  const session = await getServerSession(authOptions);
+  const viewerId = session?.user?.id ?? null;
+
   const items = await database.collection("comments")
     .find({ reviewId: String(reviewId), parentId: null, deletedAt: null })
     .sort({ createdAt: -1 })
@@ -90,11 +93,85 @@ export async function GET(req: Request, { params }: Ctx) {
     .limit(page.pageSize)
     .toArray();
 
-  const parentIds = items.map(c => String(c._id));
-  const replies = await database.collection("comments")
-    .find({ reviewId: String(reviewId), parentId: { $in: parentIds }, deletedAt: null })
-    .sort({ createdAt: 1 })
-    .toArray();
+  // Get all comment IDs (including nested replies) to check likes
+  const allCommentIds: string[] = items.map(c => String(c._id));
 
-  return NextResponse.json({ items, replies });
+  // Recursively fetch all replies (supporting infinite nesting)
+  async function fetchAllReplies(parentIds: string[]): Promise<any[]> {
+    if (parentIds.length === 0) return [];
+    const replies = await database.collection("comments")
+      .find({ reviewId: String(reviewId), parentId: { $in: parentIds }, deletedAt: null })
+      .sort({ createdAt: 1 })
+      .toArray();
+
+    const replyIds = replies.map(r => String(r._id));
+    allCommentIds.push(...replyIds);
+
+    // Recursively fetch replies to replies
+    const nestedReplies = await fetchAllReplies(replyIds);
+    return [...replies, ...nestedReplies];
+  }
+
+  const replies = await fetchAllReplies(allCommentIds.slice(0, items.length));
+
+  // Get all unique user IDs from comments
+  const allComments = [...items, ...replies];
+  const uniqueUserIds = Array.from(new Set(allComments.map((c) => c.userId).filter(Boolean)));
+
+  // Fetch user info for all comment authors
+  const userObjectIds: ObjectId[] = [];
+  for (const s of uniqueUserIds) {
+    try {
+      userObjectIds.push(new ObjectId(s));
+    } catch {
+      // Skip invalid ObjectIds
+    }
+  }
+
+  const users = database.collection("users");
+  const userDocs = userObjectIds.length
+    ? await users
+        .find(
+          { _id: { $in: userObjectIds } },
+          { projection: { _id: 1, username: 1, name: 1, image: 1 } }
+        )
+        .toArray()
+    : [];
+
+  const userById = new Map<string, { username?: string | null; name?: string | null; image?: string | null }>();
+  for (const u of userDocs) {
+    userById.set(String(u._id), {
+      username: u.username ?? null,
+      name: u.name ?? null,
+      image: u.image ?? null,
+    });
+  }
+
+  // Check which comments the user has liked
+  const likedCommentIds = new Set<string>();
+  if (viewerId && allCommentIds.length > 0) {
+    const likes = await database.collection("likes")
+      .find({
+        targetType: "comment",
+        targetId: { $in: allCommentIds },
+        userId: viewerId,
+      })
+      .toArray();
+    likes.forEach((l) => likedCommentIds.add(l.targetId));
+  }
+
+  // Add viewerLiked and user properties to items and replies
+  const itemsWithLikes = items.map((c) => ({
+    ...c,
+    viewerLiked: likedCommentIds.has(String(c._id)),
+    user: userById.get(c.userId) || null,
+  }));
+
+  const repliesWithLikes = replies.map((r) => ({
+    ...r,
+    viewerLiked: likedCommentIds.has(String(r._id)),
+    user: userById.get(r.userId) || null,
+  }));
+
+  return NextResponse.json({ items: itemsWithLikes, replies: repliesWithLikes });
 }
