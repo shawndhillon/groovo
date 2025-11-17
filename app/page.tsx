@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Header from "./components/Header";
-import CommentSection from "@/app/components/CommentSection";
+import CommentSection from "@/app/components/comments/CommentSection";
 import LikeButton from "@/app/components/LikeButton";
 
 
