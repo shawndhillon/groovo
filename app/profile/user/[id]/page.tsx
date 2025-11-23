@@ -97,7 +97,7 @@ export default function OtherUserProfilePage({ params }: PageProps) {
       const images =
         Array.isArray(snap.images) && snap.images.length > 0
           ? snap.images
-          : [{ url: "/placeholder-album.png", width: 640, height: 640 }];
+          : [{ url: "/placeholder-album.svg", width: 640, height: 640 }];
 
       return {
         id: r.albumId,

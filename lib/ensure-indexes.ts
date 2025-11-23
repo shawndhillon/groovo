@@ -10,11 +10,15 @@ export async function ensureIndexes() {
   async function safeCreateIndexes(collection: string, indexes: any[]) {
     for (const idx of indexes) {
       try {
-        await database.collection(collection).createIndex(idx.key, {
+        const indexOptions: any = {
           name: idx.name,
-          unique: idx.unique,
           background: true
-        });
+        };
+        // Only include unique if set to true
+        if (idx.unique === true) {
+          indexOptions.unique = true;
+        }
+        await database.collection(collection).createIndex(idx.key, indexOptions);
       } catch (e: any) {
         // If index already exists, check if structure matches
         if (e?.code === 86 || e?.codeName === "IndexKeySpecsConflict" || e?.code === 85) {
@@ -30,11 +34,15 @@ export async function ensureIndexes() {
               if (existingKeys !== newKeys || existingUnique !== newUnique) {
                 try {
                   await database.collection(collection).dropIndex(idx.name);
-                  await database.collection(collection).createIndex(idx.key, {
+                  const indexOptions: any = {
                     name: idx.name,
-                    unique: idx.unique,
                     background: true
-                  });
+                  };
+                  // Only include unique if set to true
+                  if (idx.unique === true) {
+                    indexOptions.unique = true;
+                  }
+                  await database.collection(collection).createIndex(idx.key, indexOptions);
                 } catch {
                   // Ignore errors during drop/recreate
                 }

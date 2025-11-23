@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import Header from "./components/Header";
 import CommentSection from "@/app/components/comments/CommentSection";
-import LikeButton from "@/app/components/LikeButton";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import GenreSelector from "./components/GenreSelector";
+import Header from "./components/Header";
 
 
 type FeedArtist = { id?: string; name: string };
@@ -38,6 +38,15 @@ export default function NewReleases() {
   const [albums, setAlbums] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Genre based albums state
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [genreAlbums, setGenreAlbums] = useState<any[]>([]);
+  const [genreLoading, setGenreLoading] = useState(false);
+  const [showGenreSelector, setShowGenreSelector] = useState(false);
+  const [genrePage, setGenrePage] = useState(1);
+  const [hasMoreAlbums, setHasMoreAlbums] = useState(false);
+  const [albumsPerPage, setAlbumsPerPage] = useState(25);
+
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState<string | null>(null);
@@ -51,6 +60,67 @@ export default function NewReleases() {
       .then(d => setAlbums(d.items || []))
       .finally(() => setLoading(false));
   }, []);
+
+  // Fetch albums when genre is selected, page changes, or # albums changes
+  useEffect(() => {
+    if (!selectedGenre) {
+      setGenreAlbums([]);
+      setHasMoreAlbums(false);
+      return;
+    }
+
+    setGenreLoading(true);
+    const limit = Math.min(albumsPerPage, 100);
+    fetch(`/api/trending-albums-by-genre?genre=${encodeURIComponent(selectedGenre)}&limit=${limit}&page=${genrePage}`)
+      .then(async r => {
+        if (!r.ok) {
+          try {
+            const err = await r.json();
+            console.error("API error:", err.error || err.message || err);
+            setGenreAlbums([]);
+            setHasMoreAlbums(false);
+            return;
+          } catch (parseError) {
+            console.error("API error: HTTP", r.status, r.statusText);
+            setGenreAlbums([]);
+            setHasMoreAlbums(false);
+            return;
+          }
+        }
+        return r.json();
+      })
+      .then(d => {
+        if (d && d.items && Array.isArray(d.items) && d.items.length > 0) {
+          // Dedupe albums by id
+          const seen = new Set<string>();
+          const uniqueAlbums = d.items.filter((album: any) => {
+            if (seen.has(album.id)) {
+              return false;
+            }
+            seen.add(album.id);
+            return true;
+          });
+          setGenreAlbums(uniqueAlbums);
+          setHasMoreAlbums(d.hasMore || false);
+        } else {
+          setGenreAlbums([]);
+          setHasMoreAlbums(false);
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching genre albums:", err);
+        setGenreAlbums([]);
+        setHasMoreAlbums(false);
+      })
+      .finally(() => setGenreLoading(false));
+  }, [selectedGenre, genrePage, albumsPerPage]);
+
+  // Reset page when genre or # albums changes
+  useEffect(() => {
+    setGenrePage(1);
+    setGenreAlbums([]);
+  }, [selectedGenre, albumsPerPage]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -155,7 +225,7 @@ export default function NewReleases() {
     };
   }, [feed, fetchedUserIds]);
   const cover = (snap?: FeedItem["albumSnapshot"]) =>
-    (Array.isArray(snap?.images) && snap!.images[0]?.url) || "/placeholder-album.png";
+    (Array.isArray(snap?.images) && snap!.images[0]?.url) || "/placeholder-album.svg";
 
   const albumName = (snap?: FeedItem["albumSnapshot"]) =>
     (snap?.name && String(snap.name)) || "Unknown album";
@@ -188,7 +258,28 @@ export default function NewReleases() {
   );
 
   return (
-
+    <>
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(39, 39, 42, 0.8);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #52525b;
+          border-radius: 10px;
+          border: 2px solid rgba(39, 39, 42, 0);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: #71717a;
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #52525b rgba(39, 39, 42, 0.8);
+        }
+      `}</style>
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
       <Header />
       <div className="mx-auto max-w-7xl px-6 py-6">
@@ -209,6 +300,142 @@ export default function NewReleases() {
           </div>
         )}
       </div>
+
+      {/* Top Albums Section */}
+      <div className="mx-auto max-w-7xl px-6 py-6">
+        <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-2xl font-semibold">Top Albums</h2>
+          {selectedGenre ? (
+            <button
+              onClick={() => setShowGenreSelector(true)}
+              className="px-4 py-2 rounded-lg bg-violet-600 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+            >
+              {selectedGenre.charAt(0).toUpperCase() + selectedGenre.slice(1)}
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowGenreSelector(true)}
+              className="px-4 py-2 rounded-lg bg-zinc-800 text-sm font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors border border-white/10"
+            >
+              Select Genre
+            </button>
+          )}
+        </div>
+
+        {genreLoading ? (
+          <p className="text-sm text-zinc-400">Loading albums…</p>
+        ) : !selectedGenre ? (
+          <div className="rounded-lg border border-white/10 bg-zinc-900/60 px-6 py-8 text-center">
+            <p className="text-sm text-zinc-400 mb-4">Select a genre to see top albums</p>
+            <button
+              onClick={() => setShowGenreSelector(true)}
+              className="px-6 py-2 rounded-lg bg-violet-600 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+            >
+              Choose Genre
+            </button>
+          </div>
+        ) : genreAlbums.length === 0 ? (
+          <p className="text-sm text-zinc-400">No albums found for this genre.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+              {genreAlbums.map((album) => (
+                <Link
+                  key={album.id}
+                  href={`/album/${encodeURIComponent(album.id)}`}
+                  className="rounded-lg bg-zinc-800 p-2 hover:bg-zinc-700 transition"
+                >
+                  <img
+                    src={album.images?.[0]?.url || album.images?.[album.images.length - 1]?.url || "/placeholder-album.svg"}
+                    alt={album.name}
+                    className="mb-2 w-full rounded-md aspect-square object-cover"
+                    onError={(e) => {
+                      // Fallback to placeholder if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      if (!target.src.includes("placeholder-album.svg")) {
+                        target.src = "/placeholder-album.svg";
+                      }
+                    }}
+                  />
+                  <div className="text-sm font-medium">{album.name}</div>
+                  <div className="text-xs text-zinc-400">
+                    {album.artists?.map((x: any) => x.name).join(", ") || "Unknown Artist"}
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-8 flex items-center justify-between">
+              <button
+                onClick={() => setGenrePage(prev => Math.max(1, prev - 1))}
+                disabled={genrePage === 1 || genreLoading}
+                className="flex items-center gap-2 px-16 py-2 rounded-lg bg-zinc-800/60 text-sm font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-zinc-800/60 border border-white/10"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous
+              </button>
+
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800/40 border border-white/10">
+                <span className="text-sm font-medium text-zinc-300">
+                  Page <span className="text-white">{genrePage}</span>
+                </span>
+                <span className="text-zinc-600 mx-1">•</span>
+                <span className="text-xs text-zinc-400">Showing</span>
+                <span className="text-sm font-medium text-white">{genreAlbums.length}</span>
+                <span className="text-xs text-zinc-400">albums</span>
+                <span className="text-zinc-600 mx-1">•</span>
+                <select
+                  id="albums-per-page"
+                  value={albumsPerPage}
+                  onChange={(e) => setAlbumsPerPage(parseInt(e.target.value))}
+                  className="px-3 py-1 rounded-md bg-zinc-800/60 border border-violet-500/30 text-sm font-medium text-white focus:outline-none focus:border-violet-500 transition-all appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222.5%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E')] bg-no-repeat bg-right hover:bg-zinc-700/60 hover:border-violet-500/50"
+                  style={{ backgroundPosition: 'right 0.5rem center', backgroundSize: '1rem', paddingRight: '2rem' }}
+                >
+                  {![5, 10, 25, 50].includes(albumsPerPage) && (
+                    <option value={albumsPerPage}>{albumsPerPage}</option>
+                  )}
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+
+              <button
+                onClick={() => setGenrePage(prev => prev + 1)}
+                disabled={!hasMoreAlbums || genreLoading}
+                className="flex items-center gap-2 px-16 py-2 rounded-lg bg-violet-600 text-sm font-medium text-white hover:bg-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-violet-600"
+              >
+                Next
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            {genreLoading && (
+              <div className="mt-4 text-center text-sm text-zinc-400">
+                Loading albums...
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Genre Selector */}
+      {showGenreSelector && (
+        <GenreSelector
+          onClose={() => setShowGenreSelector(false)}
+          onSelect={(genre) => {
+            setSelectedGenre(genre);
+            setShowGenreSelector(false);
+          }}
+          currentGenre={selectedGenre || undefined}
+          albumsPerPage={albumsPerPage}
+          onAlbumsPerPageChange={setAlbumsPerPage}
+        />
+      )}
+
       <div className="mx-auto max-w-7xl px-6 pb-16">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Your Feed</h2>
@@ -332,5 +559,6 @@ export default function NewReleases() {
       </div>
 
     </main>
+    </>
   );
 }

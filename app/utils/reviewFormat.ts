@@ -16,11 +16,11 @@
 
 import type { AlbumSnapshot, ReviewResponse } from "../types/reviews";
 
-const PLACEHOLDER_COVER = "/placeholder-album.png";
+const PLACEHOLDER_COVER = "/placeholder-album.svg";
 
 /**
  * formatAlbumArtists
- * 
+ *
  * Converts the album snapshot's `artists` field into a single string like:
  *   "Artist A, Artist B"
  *
@@ -43,7 +43,7 @@ export function formatAlbumArtists(snapshot: AlbumSnapshot): string {
 
 /**
  * albumCover
- * 
+ *
  * Picks a URL to use as album cover art.
  *
  * Selection rules:
@@ -65,7 +65,7 @@ export function albumCover(snapshot: AlbumSnapshot): string {
 
 /**
  * albumTitle
- * 
+ *
  * Returns a clean album title string.
  * - Falls back to "Unknown album" on missing/blank values.
  */
@@ -88,7 +88,7 @@ export function reviewerDisplayName(review: ReviewResponse | null): string {
 
 /**
  * reviewerHandle
- * 
+ *
  * Builds an @handle string for a reviewer.
  * Priority:
  *   username → name → trimmed userId → "@unknown"
@@ -103,7 +103,7 @@ export function reviewerHandle(review: ReviewResponse | null): string {
 
 /**
  * reviewerInitial
- * 
+ *
  * Returns a single uppercase letter to use as an avatar initial.
  * - Uses name → username → userId → "U" as fallback.
  */
@@ -115,7 +115,7 @@ export function reviewerInitial(review: ReviewResponse | null): string {
 
 /**
  * reviewerProfileHref
- * 
+ *
  * Returns a URL to the reviewer's profile page, if its yours, returns /profile
  * Priority:
  *   author.id → userId → "/profile" fallback.
@@ -134,7 +134,7 @@ export function reviewerProfileHref(
 
 /**
  * formatReviewDate
- * 
+ *
  * Formats a timestamp string into a human-readable date (e.g. "Nov 16, 2025").
  * - Returns `null` for invalid or missing dates so callers can omit the UI.
  */
@@ -152,7 +152,7 @@ export function formatReviewDate(value?: string | null): string | null {
 
 /**
  * ratingStars
- * 
+ *
  * Converts a numeric rating (0–5) into a star string
  * - Clamps values between 0 and 5.
  * - Supports half-star values (X.5).
@@ -166,7 +166,7 @@ export function ratingStars(n: number) {
 
 /**
  * pluralize
- * 
+ *
  * Returns a count + word with basic pluralization:
  *   pluralize(1, "like")  → "1 like"
  *   pluralize(3, "comment") → "3 comments"

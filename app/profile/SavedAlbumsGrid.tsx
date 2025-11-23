@@ -151,7 +151,7 @@ export default function SavedAlbumsGrid({
       aria-live="polite"
     >
       {albums.map((album) => {
-        const cover = album.images?.[0]?.url || "/placeholder-album.png";
+        const cover = album.images?.[0]?.url || "/placeholder-album.svg";
         const rating = album.review?.rating;
         const hasRating = showRating && typeof rating === "number";
 
