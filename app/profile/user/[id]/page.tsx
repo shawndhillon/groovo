@@ -135,7 +135,7 @@ export default function OtherUserProfilePage({ params }: PageProps) {
               <UserHeader 
                 user={{
                   ...currentUser,
-                  albumsCount: profile.stats.reviewsCount,
+                  albumsCount: currentUser.albumsCount ?? 0,
                   reviewsCount: profile.stats.reviewsCount,
                   followersCount: profile.stats.followersCount,
                 }} 
