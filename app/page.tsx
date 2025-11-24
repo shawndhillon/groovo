@@ -1,14 +1,12 @@
 "use client";
 
 import Header from "./components/Header";
-import NewReleasesGrid from "./components/home/NewReleasesGrid";
 import FeedReviewCard from "./components/home/FeedReviewCard";
-import { useNewReleases } from "./hooks/useNewReleases";
+import TopAlbumsSection from "./components/home/TopAlbumsSection";
 import { useFeed } from "./hooks/useFeed";
 import { getReviewId } from "./utils/feed";
 
 export default function HomePage() {
-  const { albums, loading: newReleasesLoading } = useNewReleases();
   const {
     feedMode,
     setFeedMode,
@@ -21,9 +19,8 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
       <Header />
-
       {/* Top releases */}
-      <NewReleasesGrid albums={albums} loading={newReleasesLoading} />
+      <TopAlbumsSection />
 
       {/* Feed */}
       <div className="mx-auto max-w-7xl px-6 pb-16">
