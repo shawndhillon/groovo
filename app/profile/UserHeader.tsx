@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ShareButton from "../components/ShareButton";
 
 interface UserHeaderProps {
   user: any;
@@ -19,6 +20,16 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
     name: user?.name || "",
     bio: user?.bio || "",
   });
+
+  // Sync localUser with user prop when it changes (e.g., from parent refresh)
+  useEffect(() => {
+    if (user) {
+      setLocalUser((prevUser: any) => ({
+        ...prevUser,
+        ...user,
+      }));
+    }
+  }, [user]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -40,7 +51,15 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
       if (!res.ok) throw new Error("Failed to update profile");
 
       const data = await res.json();
-      setLocalUser(data.user); // update local user immediately
+      // Merge updated user data with existing localUser to preserve counts and other fields
+      setLocalUser((prevUser: any) => ({
+        ...prevUser,
+        ...data.user,
+        // Preserve counts and other computed fields that aren't returned from update endpoint
+        albumsCount: prevUser?.albumsCount ?? data.user?.albumsCount,
+        reviewsCount: prevUser?.reviewsCount ?? data.user?.reviewsCount,
+        followersCount: prevUser?.followersCount ?? data.user?.followersCount,
+      }));
       setIsEditing(false);
       setSaving(false);
     } catch (err: any) {
@@ -156,31 +175,40 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
       </div>
 
       {/* Edit Buttons */}
-      <div className="flex flex-col items-start gap-2 mt-4 ml-auto text-right">
-        {!isEditing ? (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-800 transition"
-          >
-            Edit
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-500 transition"
-            >
-              {saving ? "Saving..." : "Save"}
-            </button>
-            <button
-              onClick={() => setIsEditing(false)}
-              className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-800 transition"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
+      <div className="flex flex-col items-end gap-2 mt-4">
+        <div className="flex gap-2 items-center">
+          {!isEditing ? (
+            <>
+              <ShareButton
+                url="/profile"
+                label="Share Profile"
+                size="sm"
+              />
+              <button
+                onClick={() => setIsEditing(true)}
+                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-800 transition"
+              >
+                Edit
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-500 transition"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-800 transition"
+              >
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -26,6 +26,7 @@
  *   Keep all data handling in hooks like `useReviewDetails`.
  */
 import { ratingStars, pluralize } from "../../utils/reviewFormat";
+import ShareButton from "../ShareButton";
 
 interface ReviewHeaderProps {
   reviewId: string;
@@ -38,6 +39,7 @@ interface ReviewHeaderProps {
 
 // Renders the review header section seen at the top of the review detail page.
 export function ReviewHeader({
+  reviewId,
   albumName,
   rating,
   createdAt,
@@ -46,9 +48,16 @@ export function ReviewHeader({
 }: ReviewHeaderProps) {
   return (
     <div className="flex flex-col gap-3">
-      <span className="text-xs uppercase tracking-widest text-violet-300">
-        Review
-      </span>
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-widest text-violet-300">
+          Review
+        </span>
+        <ShareButton
+          url={`/review/${reviewId}`}
+          label="Share Review"
+          size="sm"
+        />
+      </div>
       <h1 className="text-3xl font-semibold tracking-tight">{albumName}</h1>
       <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-400">
         <span className="text-base font-semibold text-violet-300">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Header from "./components/Header";
 import CommentSection from "@/app/components/comments/CommentSection";
 import LikeButton from "@/app/components/LikeButton";
+import ShareButton from "./components/ShareButton";
 
 
 type FeedArtist = { id?: string; name: string };
@@ -310,7 +311,12 @@ export default function NewReleases() {
 
                   <p className="mt-4 whitespace-pre-wrap text-[15px] leading-7 text-zinc-100">{r.body}</p>
                   {/* Link button to go to the dedicated review details page for this feed item */}
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <ShareButton
+                      url={`/review/${getReviewId(r)}`}
+                      label="Share Review"
+                      size="sm"
+                    />
                     <Link
                       href={`/review/${getReviewId(r)}`}
                       className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-500"

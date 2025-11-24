@@ -1,4 +1,6 @@
 // components/ReviewsPanel.tsx
+import ShareButton from "./ShareButton";
+
 export type Review = {
   id: string;
   userName: string;
@@ -60,7 +62,14 @@ export default function ReviewsPanel({
               <span className="text-sm text-zinc-400">
                 {new Date(r.createdAt).toLocaleDateString()}
               </span>
-              <span className="text-violet-300 font-semibold">★ {r.rating}/5</span>
+              <div className="flex items-center gap-2">
+                <span className="text-violet-300 font-semibold">★ {r.rating}/5</span>
+                <ShareButton
+                  url={`/review/${r.id}`}
+                  label="Share"
+                  size="sm"
+                />
+              </div>
             </div>
             <p className="mt-2 text-sm text-zinc-100">{r.reviewText}</p>
             <p className="mt-1 text-xs text-zinc-400">by {r.userName}</p>

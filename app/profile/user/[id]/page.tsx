@@ -2,6 +2,7 @@
 
 import FollowButton from "@/app/components/FollowButton";
 import Header from "@/app/components/Header";
+import ShareButton from "@/app/components/ShareButton";
 import { useUserReviews } from "@/app/hooks/useUserReviews";
 import SavedAlbumsGrid, { SavedAlbum } from "@/app/profile/SavedAlbumsGrid";
 import TopFiveFavoritesView from "@/app/profile/TopFiveFavoritesView";
@@ -153,25 +154,31 @@ export default function OtherUserProfilePage({ params }: PageProps) {
                       </div>
                     </div>
 
-                    {!profile.viewer.isSelf && (
-                      <FollowButton
-                        targetUserId={profile.id}
-                        initialFollowing={profile.viewer.youFollow}
-                        initialFollowersCount={profile.stats.followersCount}
-                        onChange={({ following, followersCount }) => {
-                          setProfile((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  viewer: { ...prev.viewer, youFollow: following },
-                                  stats: { ...prev.stats, followersCount },
-                                }
-                              : prev
-                          );
-                        }}
+                    <div className="flex items-center gap-2">
+                      <ShareButton
+                        url={`/profile/user/${profile.id}`}
+                        label="Share Profile"
+                        size="sm"
                       />
-
-                    )}
+                      {!profile.viewer.isSelf && (
+                        <FollowButton
+                          targetUserId={profile.id}
+                          initialFollowing={profile.viewer.youFollow}
+                          initialFollowersCount={profile.stats.followersCount}
+                          onChange={({ following, followersCount }) => {
+                            setProfile((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    viewer: { ...prev.viewer, youFollow: following },
+                                    stats: { ...prev.stats, followersCount },
+                                  }
+                                : prev
+                            );
+                          }}
+                        />
+                      )}
+                    </div>
                   </div>
 
                   {profile.bio && (
