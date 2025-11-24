@@ -180,7 +180,7 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
           {!isEditing ? (
             <>
               <ShareButton
-                url="/profile"
+                url={localUser?._id ? `/profile/user/${localUser._id}` : "/profile"}
                 label="Share Profile"
                 size="sm"
               />
