@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import { clientPromise, db } from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 // bcrypt relies on Node
 export const runtime = "nodejs";
@@ -34,6 +35,7 @@ export const authOptions: NextAuthOptions = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true, // Allow linking Google accounts to existing users with same email
     }),
     Credentials({
       credentials: {
@@ -69,6 +71,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google" && user.email) {
         const database = await db();
         const users = database.collection("users");
+        const accounts = database.collection("accounts");
 
         // Check if user exists
         const existingUser = await users.findOne({ email: user.email });
@@ -87,6 +90,42 @@ export const authOptions: NextAuthOptions = {
             (user as any).id = String(result.insertedId);
           }
         } else {
+          // User exists - link the Google account to the existing user
+          if (user && existingUser._id) {
+            (user as any).id = String(existingUser._id);
+          }
+
+          // Check if account link already exists for user or Google account
+          const userIdForQuery = existingUser._id instanceof ObjectId
+            ? existingUser._id
+            : new ObjectId(String(existingUser._id));
+
+          const existingAccountByUser = await accounts.findOne({
+            userId: userIdForQuery,
+            provider: "google",
+          });
+
+          const existingAccountByProvider = await accounts.findOne({
+            provider: "google",
+            providerAccountId: account.providerAccountId,
+          });
+
+          // If no account link exists, create it
+          if (!existingAccountByUser && !existingAccountByProvider && account.providerAccountId) {
+            await accounts.insertOne({
+              userId: userIdForQuery,
+              type: account.type,
+              provider: "google",
+              providerAccountId: account.providerAccountId,
+              access_token: account.access_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+            });
+          }
+
+          // Update user info
           await users.updateOne(
             { email: user.email },
             {
@@ -96,9 +135,6 @@ export const authOptions: NextAuthOptions = {
               },
             }
           );
-          if (user && existingUser._id) {
-            (user as any).id = String(existingUser._id);
-          }
         }
       }
       return true;
