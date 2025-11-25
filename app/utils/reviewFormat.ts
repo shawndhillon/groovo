@@ -143,7 +143,8 @@ export function formatReviewDate(value?: string | null): string | null {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
 
-  return d.toLocaleDateString(undefined, {
+  // Use fixed locale "en-US" to prevent hydration mismatches between server and client
+  return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",

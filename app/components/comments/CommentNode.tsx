@@ -31,7 +31,14 @@ export default function CommentNode({
   const timestamp = useMemo(() => {
     const d = new Date(comment.createdAt);
     if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleString();
+    // Use fixed locale "en-US" to prevent hydration mismatches between server and client
+    return d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
   }, [comment.createdAt]);
 
   return (

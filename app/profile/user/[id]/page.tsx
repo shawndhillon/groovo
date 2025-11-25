@@ -2,9 +2,12 @@
 
 import FollowButton from "@/app/components/FollowButton";
 import Header from "@/app/components/Header";
+import ShareButton from "@/app/components/ShareButton";
 import { useUserReviews } from "@/app/hooks/useUserReviews";
+import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 import SavedAlbumsGrid, { SavedAlbum } from "@/app/profile/SavedAlbumsGrid";
 import TopFiveFavoritesView from "@/app/profile/TopFiveFavoritesView";
+import UserHeader from "@/app/profile/UserHeader";
 import { useEffect, useMemo, useState } from "react";
 
 type Params = { id: string };
@@ -37,6 +40,7 @@ export default function OtherUserProfilePage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+  const { user: currentUser, isLoading: isCurrentUserLoading } = useCurrentUser();
   const {
     items: reviews,
     loading: reviewsLoading,
@@ -126,68 +130,86 @@ export default function OtherUserProfilePage({ params }: PageProps) {
           <div className="py-16 text-center text-zinc-400">User not found.</div>
         ) : (
           <>
-            {/* Header card */}
-            <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-6">
-              <div className="flex items-start gap-4">
-                {profile.image ? (
-                  <img
-                    src={profile.image}
-                    alt={profile.username ?? "avatar"}
-                    className="h-16 w-16 rounded-full object-cover border-2 border-violet-500/20"
-                  />
-                ) : (
-                  <div className="h-16 w-16 rounded-full bg-violet-500/20 flex items-center justify-center border-2 border-violet-500/20">
-                    <span className="text-2xl font-semibold text-violet-400">
-                      {(profile.name || profile.username || "U")[0].toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <h1 className="text-xl font-semibold text-white truncate">
-                        {profile.name || profile.username || "User"}
-                      </h1>
-                      <div className="text-sm text-zinc-400 truncate">
-                        @{profile.username ?? profile.id.slice(0, 6)}
+            {/* Header card - use UserHeader if it's the current user's own profile */}
+            {profile.viewer.isSelf && currentUser && !isCurrentUserLoading ? (
+              <UserHeader 
+                user={{
+                  ...currentUser,
+                  albumsCount: currentUser.albumsCount ?? 0,
+                  reviewsCount: profile.stats.reviewsCount,
+                  followersCount: profile.stats.followersCount,
+                }} 
+                loading={false} 
+              />
+            ) : (
+              <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-6">
+                <div className="flex items-start gap-4">
+                  {profile.image ? (
+                    <img
+                      src={profile.image}
+                      alt={profile.username ?? "avatar"}
+                      className="h-16 w-16 rounded-full object-cover border-2 border-violet-500/20"
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-violet-500/20 flex items-center justify-center border-2 border-violet-500/20">
+                      <span className="text-2xl font-semibold text-violet-400">
+                        {(profile.name || profile.username || "U")[0].toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <h1 className="text-xl font-semibold text-white truncate">
+                          {profile.name || profile.username || "User"}
+                        </h1>
+                        <div className="text-sm text-zinc-400 truncate">
+                          @{profile.username ?? profile.id.slice(0, 6)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <ShareButton
+                          url={`/profile/user/${profile.id}`}
+                          label="Share Profile"
+                          size="sm"
+                        />
+                        {!profile.viewer.isSelf && (
+                          <FollowButton
+                            targetUserId={profile.id}
+                            initialFollowing={profile.viewer.youFollow}
+                            initialFollowersCount={profile.stats.followersCount}
+                            onChange={({ following, followersCount }) => {
+                              setProfile((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      viewer: { ...prev.viewer, youFollow: following },
+                                      stats: { ...prev.stats, followersCount },
+                                    }
+                                  : prev
+                              );
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
 
-                    {!profile.viewer.isSelf && (
-                      <FollowButton
-                        targetUserId={profile.id}
-                        initialFollowing={profile.viewer.youFollow}
-                        initialFollowersCount={profile.stats.followersCount}
-                        onChange={({ following, followersCount }) => {
-                          setProfile((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  viewer: { ...prev.viewer, youFollow: following },
-                                  stats: { ...prev.stats, followersCount },
-                                }
-                              : prev
-                          );
-                        }}
-                      />
-
+                    {profile.bio && (
+                      <p className="mt-3 text-sm text-zinc-300 whitespace-pre-wrap">
+                        {profile.bio}
+                      </p>
                     )}
-                  </div>
 
-                  {profile.bio && (
-                    <p className="mt-3 text-sm text-zinc-300 whitespace-pre-wrap">
-                      {profile.bio}
-                    </p>
-                  )}
-
-                  <div className="mt-4 flex items-center gap-4 text-sm text-zinc-400">
-                    <span>{profile.stats.reviewsCount} reviews</span>
-                    <span>{profile.stats.followersCount} followers</span>
-                    <span>{profile.stats.followingCount} following</span>
+                    <div className="mt-4 flex items-center gap-4 text-sm text-zinc-400">
+                      <span>{profile.stats.reviewsCount} reviews</span>
+                      <span>{profile.stats.followersCount} followers</span>
+                      <span>{profile.stats.followingCount} following</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* Top 5 (read-only for others; editable only if you are the owner) */}
             <section className="mt-8">

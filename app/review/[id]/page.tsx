@@ -21,6 +21,7 @@
  */
 
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Header from "@/app/components/Header";
 import CommentSection from "@/app/components/comments/CommentSection";
 
@@ -60,6 +61,13 @@ export default function ReviewDetailsPage() {
    */
   const params = useParams<{ id?: string }>();
   const reviewId = params?.id ?? "";
+  
+  // Prevent hydration mismatches by ensuring we only render after client-side mount
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   /**
    * useReviewDetails(reviewId)
@@ -102,6 +110,18 @@ export default function ReviewDetailsPage() {
     coverUrl,
     createdAt,
   } = useReviewDetails(reviewId);
+
+  // Don't render content until after client-side mount to prevent hydration mismatches
+  if (!mounted) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-black text-white">
+        <Header showSearch />
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10 md:flex-row">
+          <div className="text-sm text-zinc-400">Loading review…</div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-black text-white">
