@@ -2,6 +2,12 @@
 
 // ---------- Types ----------
 
+export type AlbumSnapshotForDb = {
+  name: string;
+  artists: Array<{ id: string; name: string }>;
+  images: Array<{ url: string; width: number; height: number }>;
+};
+
 /** Raw review doc as returned by /api/reviews (Mongo-ish) */
 export type ApiReview = {
   _id?: string | { $oid: string };
@@ -62,16 +68,37 @@ export function mapApiReviewToUI(r: ApiReview): UIReview {
 }
 
 /** Build a schema-friendly album snapshot (artists as strings) */
-export function buildAlbumSnapshotForDb(spotifyAlbum: any | null) {
+export function buildAlbumSnapshotForDb(spotifyAlbum: any): AlbumSnapshotForDb | null {
   if (!spotifyAlbum) return null;
-  const artists = Array.isArray(spotifyAlbum.artists)
-    ? spotifyAlbum.artists.map((a: any) => (typeof a === "string" ? a : a?.name)).filter(Boolean)
-    : [];
+
+  // Some Spotify responses put images on album.images, others on images
+  const rawImages =
+    spotifyAlbum?.images ??
+    spotifyAlbum?.album?.images ??
+    [];
+
   return {
-    name: String(spotifyAlbum.name ?? ""),
-    artists,
+    name: spotifyAlbum?.name ?? "Unknown",
+    artists: (spotifyAlbum?.artists ?? []).map((a: any) => ({
+      id: String(a?.id ?? ""),
+      name: String(a?.name ?? "Unknown Artist"),
+    })),
+    images: rawImages.map((im: any) => ({
+      url: String(im?.url ?? ""),
+      width: Number(im?.width ?? 0),
+      height: Number(im?.height ?? 0),
+    })),
   };
 }
+
+/** POST helper (kept here for clarity) */
+export type PostReviewArgs = {
+  albumId: string;
+  rating: number;
+  body: string;
+  album: AlbumSnapshotForDb | null;
+};
+
 
 async function safeJson(res: Response) {
   try { return await res.json(); } catch { return null; }
@@ -90,24 +117,22 @@ function normalizeErrorBody(body: any): string {
 // ---------- Network Helpers ----------
 
 /** POST /api/reviews with proper cookies and normalized errors */
-export async function postReview(payload: PostReviewPayload): Promise<PostReviewResult> {
-  const res = await fetch("/api/reviews", {
-    method: "POST",
-    credentials: "include",
-    cache: "no-store",
-    headers: { "Content-Type": "application/json", accept: "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (res.ok) {
-    const data = await res.json();
-    return { ok: true, id: String(data?.id ?? "") };
+export async function postReview(payload: PostReviewArgs): Promise<PostReviewResult> {
+  try {
+    const res = await fetch("/api/reviews", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({ error: "Request failed" }));
+      return { ok: false, status: res.status, message: error || `HTTP ${res.status}` };
+    }
+    const json = await res.json();
+    return { ok: true, id: String(json.id) };
+  } catch (e: any) {
+    return { ok: false, status: 0, message: e?.message ?? "Network error" };
   }
-
-  const body = await safeJson(res);
-  const message = normalizeErrorBody(body);
-
-  return { ok: false, status: res.status, message };
 }
 
 /** GET /api/reviews?albumId=... (single page) */

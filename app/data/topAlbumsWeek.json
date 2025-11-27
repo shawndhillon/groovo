@@ -1,0 +1,42 @@
+[
+  {
+    "position": 1,
+    "title": "The Life Of A Showgirl",
+    "artist": "Taylor Swift",
+    "spotifyAlbumId": "6QNMhoV8V0u7cFuhhUBOn7",
+    "spotifyUrl": "https://open.spotify.com/album/6QNMhoV8V0u7cFuhhUBOn7",        
+    "imageUrl": "https://i.scdn.co/image/ab67616d0000b273f756bdc2c11a985dc0c06d94"
+  },
+  {
+    "position": 2,
+    "title": "I'm The Problem",
+    "artist": "Morgan Wallen",
+    "spotifyAlbumId": "5IZ8sY5FjtL9hloXpv0XbD",
+    "spotifyUrl": "https://open.spotify.com/album/5IZ8sY5FjtL9hloXpv0XbD",        
+    "imageUrl": "https://i.scdn.co/image/ab67616d0000b27335ea219ce47813b5e2dc3745"
+  },
+  {
+    "position": 3,
+    "title": "Man's Best Friend",
+    "artist": "Sabrina Carpenter",
+    "spotifyAlbumId": "1aqg30bNvLSWgShZgX4oop",
+    "spotifyUrl": "https://open.spotify.com/album/1aqg30bNvLSWgShZgX4oop",
+    "imageUrl": "https://i.scdn.co/image/ab67616d0000b273b1863bf95557ea7f357c4947"
+  },
+  {
+    "position": 4,
+    "title": "SOS",
+    "artist": "SZA",
+    "spotifyAlbumId": "1Q5WON8dw2JFLP5JVQXu1e",
+    "spotifyUrl": "https://open.spotify.com/album/1Q5WON8dw2JFLP5JVQXu1e",
+    "imageUrl": "https://i.scdn.co/image/ab67616d0000b2735623d454ad0ffa8d0ebfd4ad"
+  },
+  {
+    "position": 5,
+    "title": "Am I The Drama?",
+    "artist": "Cardi B",
+    "spotifyAlbumId": "1LsNb6mVitbLZCxnRsbCDJ",
+    "spotifyUrl": "https://open.spotify.com/album/1LsNb6mVitbLZCxnRsbCDJ",
+    "imageUrl": "https://i.scdn.co/image/ab67616d0000b2733e5a1515b5f85c7b45619273"
+  }
+]

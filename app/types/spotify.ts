@@ -47,5 +47,11 @@ export interface SpotifyAlbumWithTracks extends SpotifyAlbum {
     items: SpotifyTrack[];
     total: number;
   };
+  // Last.fm data
+  lastfm?: {
+    url: string;
+    playcount: number;
+    listeners: number;
+  };
 }
 

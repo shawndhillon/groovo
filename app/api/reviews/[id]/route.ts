@@ -25,12 +25,69 @@ export async function GET(_: Request, { params }: Ctx) {
   await ensureIndexes();
   const { id } = await params;
   const database = await db();
+
+  // Validate the identifier before querying MongoDB
+  let asObjectId: ObjectId | null = null;
+  try {
+    asObjectId = new ObjectId(id);
+  } catch {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const review = await database.collection("reviews").findOne({
-    _id: new ObjectId(id),
+  
+    _id: asObjectId,
     deletedAt: null,
   });
   if (!review) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(review);
+
+  const session = await getServerSession(authOptions);
+
+  // Fetch author metadata so the client does not need a second request
+  let author: { id: string; username?: string | null; name?: string | null; image?: string | null } | null = null;
+  try {
+    const authorDoc = await database
+      .collection("users")
+      .findOne({ _id: new ObjectId(String(review.userId)) }, { projection: { _id: 1, username: 1, name: 1, image: 1 } });
+    if (authorDoc) {
+      author = {
+        id: String(authorDoc._id),
+        username: authorDoc.username ?? null,
+        name: authorDoc.name ?? null,
+        image: authorDoc.image ?? null,
+      };
+    }
+  } catch {
+    author = null;
+  }
+
+  // Determine if the current viewer has liked this review
+  let viewerLiked = false;
+  if (session?.user?.id) {
+    const liked = await database.collection("likes").findOne({
+      targetType: "review",
+      targetId: String(review._id),
+      userId: session.user.id,
+    });
+    viewerLiked = !!liked;
+  }
+
+  // Return a normalized document so clients receive author and viewer context in a single call
+  return NextResponse.json({
+    _id: String(review._id),
+    id: String(review._id),
+    userId: review.userId,
+    albumId: review.albumId,
+    rating: review.rating,
+    body: review.body,
+    likeCount: review.likeCount ?? 0,
+    commentCount: review.commentCount ?? 0,
+    createdAt: review.createdAt,
+    updatedAt: review.updatedAt,
+    albumSnapshot: review.albumSnapshot ?? null,
+    author,
+    viewerLiked,
+  });
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {

@@ -4,7 +4,11 @@ import Link from "next/link";
 import SearchBar from "./SearchBar";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
-export default function Header() {
+interface HeaderProps {
+  showSearch?: boolean;
+}
+
+export default function Header({showSearch = true}: HeaderProps) {
   const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const isLoggedIn = !!currentUser;
 
@@ -18,16 +22,26 @@ export default function Header() {
         </div>
 
         {/* Search Bar */}
-        <SearchBar />
+        {showSearch && (
+          <SearchBar />
+        )}
 
         {/* Right side auth area */}
         <div className="flex items-center gap-4">
           {isUserLoading ? (
             <span className="text-sm text-zinc-500">…</span>
           ) : isLoggedIn ? (
-            <Link href="/profile" className="text-sm text-zinc-400 hover:text-white transition">
-              Profile
-            </Link>
+            <>
+              <Link href="/concerts" className="text-sm text-zinc-400 hover:text-white transition">
+                Concerts
+              </Link>
+              <Link href="/profile" className="text-sm text-zinc-400 hover:text-white transition">
+                Profile
+              </Link>
+              <Link href="/api/auth/signout" className="text-sm text-zinc-400 hover:text-white transition">
+                Sign out
+              </Link>
+            </>
           ) : (
             <>
               <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition">Login</Link>

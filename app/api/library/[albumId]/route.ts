@@ -14,11 +14,14 @@ export async function DELETE(
   _req: Request,
   { params }: { params: { albumId: string } }
 ) {
+
+  const { albumId: rawAlbumId } = await params; 
+  const albumId = String(rawAlbumId || "").trim();
+
   const session = await getServerSession(authOptions);
   const userId = getUserId(session);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const albumId = String(params?.albumId || "").trim();
   if (!albumId) return NextResponse.json({ error: "albumId required" }, { status: 400 });
 
   await ensureIndexes();

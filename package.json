@@ -2,14 +2,20 @@
   "name": "nextjs",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "next start"
+    "start": "next start",
+    "fetch:billboard": "node scripts/fetchBillboardTopAlbums.js"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.0",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "cheerio": "^1.1.2",
+    "cloudinary": "^2.8.0",
+    "dotenv": "^17.2.3",
     "mongodb": "^6.20.0",
     "next": "15.5.4",
     "next-auth": "^4.24.11",
