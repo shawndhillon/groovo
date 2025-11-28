@@ -15,10 +15,31 @@ export default function Header({showSearch = true}: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full bg-zinc-900/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo + Title */}
+        {/* Logo + Title + Navigation */}
         <div className="flex items-center gap-2">
-          <Link href="/"><div className="h-6 w-6 rounded-md bg-violet-500" /></Link>
-          <Link href="/"><span className="text-lg font-semibold tracking-tight hover:text-violet-400 transition">Groovo</span></Link>
+          {/* Logo - clickable link to home */}
+          <Link href="/">
+            <div className="h-6 w-6 rounded-md bg-violet-500" />
+          </Link>
+          
+          {/* Site Title - clickable link to home */}
+          <Link
+            href="/"
+            className="text-lg font-semibold tracking-tight hover:text-violet-400 transition"
+          >
+            Groovo
+          </Link>
+          
+          {/* Spacer for visual separation */}
+          <div className="w-6" />
+          
+          {/* Events Navigation Link - shows upcoming concerts for reviewed/library artists */}
+          <Link
+            href="/events"
+            className="text-sm text-zinc-400 hover:text-violet-400 transition"
+          >
+            Upcoming Events
+          </Link>
         </div>
 
         {/* Search Bar */}
