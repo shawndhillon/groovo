@@ -53,6 +53,9 @@ export default function Header({showSearch = true}: HeaderProps) {
             <span className="text-sm text-zinc-500">…</span>
           ) : isLoggedIn ? (
             <>
+              <Link href="/concerts" className="text-sm text-zinc-400 hover:text-white transition">
+                Concerts
+              </Link>
               <Link href="/profile" className="text-sm text-zinc-400 hover:text-white transition">
                 Profile
               </Link>
