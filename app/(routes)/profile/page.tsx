@@ -1,18 +1,32 @@
-// app/profile/page.tsx
 "use client";
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 import Header from "@/app/components/Header";
-import UserHeader from "@/app/(routes)/profile/UserHeader";
-import AddFavoriteButton from "@/app/components/AddTop5Button";
-import SavedAlbumsGrid, { SavedAlbum } from "@/app/(routes)/profile/SavedAlbumsGrid";
+import UserHeader from "@/app/(routes)/profile/components/UserHeader";
+import AddFavoriteButton from "@/app/(routes)/profile/components/AddTop5Button";
+import SavedAlbumsGrid from "@/app/(routes)/profile/components/SavedAlbumsGrid";
+import TopFiveFavoritesView from "./components/TopFiveFavoritesView";
+
+import type { SavedAlbum } from "@/app/utils/albumsGrid";
+import { mapReviewsToSavedAlbums } from "@/app/utils/albumsGrid";
+
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 import { useUserReviews } from "@/app/hooks/useUserReviews";
-import TopFiveFavoritesView from "./TopFiveFavoritesView";
-import Link from "next/link"; 
 
-
+/**
+ * ProfilePage
+ *
+ * Authenticated user profile screen that:
+ * - Redirects unauthenticated users to /login
+ * - Shows the user's header info (avatar, name, etc.)
+ * - Displays their Top 5 favorite albums section
+ * - Displays a "My Library" CTA to open the full library view
+ * - Renders a grid of albums derived from the user's reviews
+ *   (each tile includes rating + review snippet)
+ */
 export default function ProfilePage() {
   const router = useRouter();
   const {
@@ -34,36 +48,10 @@ export default function ProfilePage() {
   }, [isUserLoading, userError, currentUser, router]);
 
   // Map API reviews -> grid DTO, with fallbacks
-  const albumsForGrid: SavedAlbum[] = useMemo(() => {
-    return (reviews || []).map((r) => {
-      // prefer albumSnapshot; fallback to legacy "album"; else {}
-      const snap = r.albumSnapshot ?? (r as any).album ?? {};
-
-      const name = typeof snap.name === "string" && snap.name.trim() ? snap.name : "Unknown";
-      const artists =
-        Array.isArray(snap.artists) && snap.artists.length > 0
-          ? snap.artists
-          : [{ id: "unknown", name: "Unknown Artist" }];
-
-      const images =
-        Array.isArray(snap.images) && snap.images.length > 0
-          ? snap.images
-          : [{ url: "/placeholder-album.svg", width: 640, height: 640 }];
-
-      return {
-        id: r.albumId,
-        name,
-        artists,
-        images,
-        review: {
-          rating: r.rating,
-          reviewText: r.body,
-          createdAt: r.createdAt,
-        },
-        savedAt: r.createdAt,
-      } as SavedAlbum;
-    });
-  }, [reviews]);
+  const albumsForGrid: SavedAlbum[] = useMemo(
+    () => mapReviewsToSavedAlbums(reviews as any),
+    [reviews],
+  );
 
   // 1) Loading view
   if (isUserLoading) {
@@ -96,7 +84,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
       <Header />
       <div className="mx-auto max-w-7xl px-6 pb-12">
-        <UserHeader user={currentUser} loading={false} />
+        <UserHeader user={currentUser} loading={false} isSelf />
 
         <section className="mt-8">
           <TopFiveFavoritesView />

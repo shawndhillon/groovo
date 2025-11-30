@@ -3,29 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ReactNode } from "react";
-
-/**
- * Public UI shape the grid expects. This can represent:
- *  - a saved album (with optional review)
- *  - a review-derived album (albumSnapshot + review info)
- *
- * Keep this DTO in the UI layer so the component doesn’t depend
- * on backend types. The profile page can map API results into this
- * shape before passing them down.
- */
-export interface SavedAlbum {
-  id: string; // albumId (e.g., Spotify ID)
-  name: string;
-  artists: Array<{ id: string; name: string }>;
-  images: Array<{ url: string; height: number; width: number }>;
-  review?: {
-    rating: number;      // 1..5
-    reviewText: string;  // short review body
-    createdAt: string;   // ISO date string
-  };
-  savedAt?: string;      // optional timestamp when saved/created
-}
-
+import type { SavedAlbum } from "@/app/utils/albumsGrid";
 /**
  * Empty state variants help us reuse the grid for different contexts
  * without hardcoding copy. Extend as needed (e.g., "likes", "history").
@@ -79,7 +57,7 @@ export default function SavedAlbumsGrid({
         aria-busy="true"
         aria-live="polite"
       >
-        {Array.from({ length: 8 }).map((_, i) => (
+        {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="animate-pulse">
             <div className="rounded-lg bg-zinc-800 p-2">
               <div className="aspect-square w-full rounded-md bg-zinc-700 mb-2" />

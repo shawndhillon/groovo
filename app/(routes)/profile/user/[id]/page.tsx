@@ -1,14 +1,29 @@
 "use client";
 
-import FollowButton from "@/app/components/FollowButton";
+import { useEffect, useMemo, useState } from "react";
+
 import Header from "@/app/components/Header";
-import ShareButton from "@/app/components/ShareButton";
+import UserHeader from "@/app/(routes)/profile/components/UserHeader";
+import SavedAlbumsGrid from "@/app/(routes)/profile/components/SavedAlbumsGrid";
+import TopFiveFavoritesView from "@/app/(routes)/profile/components/TopFiveFavoritesView";
+
 import { useUserReviews } from "@/app/hooks/useUserReviews";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
-import SavedAlbumsGrid, { SavedAlbum } from "@/app/(routes)/profile/SavedAlbumsGrid";
-import TopFiveFavoritesView from "@/app/(routes)/profile/TopFiveFavoritesView";
-import UserHeader from "@/app/(routes)/profile/UserHeader";
-import { useEffect, useMemo, useState } from "react";
+
+import type { SavedAlbum } from "@/app/utils/albumsGrid";
+import { mapReviewsToSavedAlbums } from "@/app/utils/albumsGrid";
+
+/**
+ * OtherUserProfilePage
+ *
+ * Public profile page for another user (or yourself via direct link).
+ * Responsibilities:
+ * - Resolve the target user ID from the route params
+ * - Fetch the public profile payload (/api/users/:id)
+ * - Fetch that user's reviews and display them as an album grid
+ * - Render Top 5 favorites (editable only if viewer.isSelf)
+ * - Show follow/share controls when viewing someone else
+ */
 
 type Params = { id: string };
 type PageProps = { params: Promise<Params> };
@@ -86,37 +101,15 @@ export default function OtherUserProfilePage({ params }: PageProps) {
     };
   }, [targetId]);
 
-  // Map reviews
-  const albumsForGrid: SavedAlbum[] = useMemo(() => {
-    return (reviews || []).map((r) => {
-      // prefer albumSnapshot; fallback to legacy album
-      const snap = r.albumSnapshot ?? (r as any).album ?? {};
-
-      const name = typeof snap.name === "string" && snap.name.trim() ? snap.name : "Unknown";
-      const artists =
-        Array.isArray(snap.artists) && snap.artists.length > 0
-          ? snap.artists
-          : [{ id: "unknown", name: "Unknown Artist" }];
-
-      const images =
-        Array.isArray(snap.images) && snap.images.length > 0
-          ? snap.images
-          : [{ url: "/placeholder-album.svg", width: 640, height: 640 }];
-
-      return {
-        id: r.albumId,
-        name,
-        artists,
-        images,
-        review: {
-          rating: r.rating,
-          reviewText: r.body,
-          createdAt: r.createdAt,
-        },
-        savedAt: r.createdAt,
-      } as SavedAlbum;
-    });
-  }, [reviews]);
+  /**
+   * Normalize the target user's reviews into SavedAlbum entries for the grid.
+   * Uses the shared mapper so the card shape matches everywhere (own profile,
+   * other user profile, Top 5, editable grid, etc.).
+   */
+  const albumsForGrid: SavedAlbum[] = useMemo(
+    () => mapReviewsToSavedAlbums(reviews as any),
+    [reviews],
+  );
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
@@ -131,85 +124,19 @@ export default function OtherUserProfilePage({ params }: PageProps) {
         ) : (
           <>
             {/* Header card - use UserHeader if it's the current user's own profile */}
-            {profile.viewer.isSelf && currentUser && !isCurrentUserLoading ? (
-              <UserHeader 
-                user={{
-                  ...currentUser,
-                  albumsCount: currentUser.albumsCount ?? 0,
-                  reviewsCount: profile.stats.reviewsCount,
-                  followersCount: profile.stats.followersCount,
-                }} 
-                loading={false} 
-              />
-            ) : (
-              <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-6">
-                <div className="flex items-start gap-4">
-                  {profile.image ? (
-                    <img
-                      src={profile.image}
-                      alt={profile.username ?? "avatar"}
-                      className="h-16 w-16 rounded-full object-cover border-2 border-violet-500/20"
-                    />
-                  ) : (
-                    <div className="h-16 w-16 rounded-full bg-violet-500/20 flex items-center justify-center border-2 border-violet-500/20">
-                      <span className="text-2xl font-semibold text-violet-400">
-                        {(profile.name || profile.username || "U")[0].toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <h1 className="text-xl font-semibold text-white truncate">
-                          {profile.name || profile.username || "User"}
-                        </h1>
-                        <div className="text-sm text-zinc-400 truncate">
-                          @{profile.username ?? profile.id.slice(0, 6)}
-                        </div>
-                      </div>
+            <UserHeader
+              user={{
+                // this object just needs to match what UserHeader expects
+                ...profile,
+                // map stats into the fields UserHeader uses
+                albumsCount: (profile as any).albumsCount ?? 0, // or whatever you track
+                reviewsCount: profile.stats.reviewsCount,
+                followersCount: profile.stats.followersCount,
+              }}
+              loading={false}
+              isSelf={profile.viewer.isSelf}
+            />
 
-                      <div className="flex items-center gap-2">
-                        <ShareButton
-                          url={`/profile/user/${profile.id}`}
-                          label="Share Profile"
-                          size="sm"
-                        />
-                        {!profile.viewer.isSelf && (
-                          <FollowButton
-                            targetUserId={profile.id}
-                            initialFollowing={profile.viewer.youFollow}
-                            initialFollowersCount={profile.stats.followersCount}
-                            onChange={({ following, followersCount }) => {
-                              setProfile((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      viewer: { ...prev.viewer, youFollow: following },
-                                      stats: { ...prev.stats, followersCount },
-                                    }
-                                  : prev
-                              );
-                            }}
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    {profile.bio && (
-                      <p className="mt-3 text-sm text-zinc-300 whitespace-pre-wrap">
-                        {profile.bio}
-                      </p>
-                    )}
-
-                    <div className="mt-4 flex items-center gap-4 text-sm text-zinc-400">
-                      <span>{profile.stats.reviewsCount} reviews</span>
-                      <span>{profile.stats.followersCount} followers</span>
-                      <span>{profile.stats.followingCount} following</span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
 
             {/* Top 5 (read-only for others; editable only if you are the owner) */}
             <section className="mt-8">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FavoriteApiItem, getFavoritesTop5 } from "@/app/utils/top5";
+import { FavoriteApiItem, getFavoritesTop5 } from "@/app/utils/albumsGrid";
 
 export function useFavoritesTop5(userId?: string) {
   const [items, setItems] = useState<FavoriteApiItem[]>([]);

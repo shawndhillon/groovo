@@ -3,8 +3,8 @@
 import AddToLibraryButton from "@/app/components/AddToLibraryButton";
 import { useState, useEffect } from "react";
 import Header from "@/app/components/Header";
-import AlbumHeader from "./AlbumHeader";
-import ReviewSection from "./ReviewSection";
+import AlbumHeader from "./components/AlbumHeader";
+import ReviewSection from "./components/ReviewSection";
 import CompactTracklist from "@/app/components/CompactTracklist";
 import { useAlbum } from "@/app/hooks/useAlbum";
 

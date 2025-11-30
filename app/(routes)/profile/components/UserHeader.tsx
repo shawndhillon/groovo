@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import ShareButton from "@/app/components/ShareButton";
+import FollowButton from "@/app/components/FollowButton";
 
 interface UserHeaderProps {
   user: any;
   loading: boolean;
+  isSelf: boolean;
 }
 
-export default function UserHeader({ user, loading }: UserHeaderProps) {
-  const router = useRouter();
+export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,21 +21,20 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
     bio: user?.bio || "",
   });
 
-  // Sync localUser with user prop when it changes (e.g., from parent refresh)
+  // Sync updates from parent
   useEffect(() => {
     if (user) {
-      setLocalUser((prevUser: any) => ({
-        ...prevUser,
-        ...user,
-      }));
+      setLocalUser((prev: any) => ({ ...prev, ...user }));
+      setFormData({
+        name: user?.name || "",
+        bio: user?.bio || "",
+      });
     }
   }, [user]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  ) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSave = async () => {
     try {
@@ -51,26 +50,22 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
       if (!res.ok) throw new Error("Failed to update profile");
 
       const data = await res.json();
-      // Merge updated user data with existing localUser to preserve counts and other fields
-      setLocalUser((prevUser: any) => ({
-        ...prevUser,
+      setLocalUser((prev: any) => ({
+        ...prev,
         ...data.user,
-        // Preserve counts and other computed fields that aren't returned from update endpoint
-        albumsCount: prevUser?.albumsCount ?? data.user?.albumsCount,
-        reviewsCount: prevUser?.reviewsCount ?? data.user?.reviewsCount,
-        followersCount: prevUser?.followersCount ?? data.user?.followersCount,
       }));
+
       setIsEditing(false);
-      setSaving(false);
     } catch (err: any) {
       setError(err.message);
+    } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-8 shadow-2xl backdrop-blur">
+      <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-8">
         <div className="animate-pulse">
           <div className="flex items-center gap-6">
             <div className="h-20 w-20 rounded-full bg-zinc-700" />
@@ -87,7 +82,7 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
 
   if (!localUser) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-8 shadow-2xl backdrop-blur">
+      <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-8">
         <p className="text-zinc-400">Unable to load profile information</p>
       </div>
     );
@@ -95,19 +90,17 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
 
   return (
     <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-8 shadow-2xl backdrop-blur">
-
-      {/* Top block: photo + user info + edit buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-        {/* Profile Picture */}
-        <div className="relative">
-          {user.image ? (
+        {/* Avatar */}
+        <div>
+          {localUser.image ? (
             <img
               src={localUser.image}
               alt={localUser.name || localUser.username || "Profile"}
               className="h-20 w-20 rounded-full object-cover border-2 border-violet-500/20"
             />
           ) : (
-            <div className="h-30 w-30 rounded-full bg-violet-500/20 flex items-center justify-center border-2 border-violet-500/20">
+            <div className="h-20 w-20 rounded-full bg-violet-500/20 flex items-center justify-center border-2 border-violet-500/20">
               <span className="text-4xl font-semibold text-violet-400">
                 {(localUser.name || localUser.username || "U")[0].toUpperCase()}
               </span>
@@ -117,17 +110,17 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
 
         {/* User Info */}
         <div className="flex-1">
-          {!isEditing ? (
+          {!isSelf || !isEditing ? (
             <>
               <h1 className="text-2xl font-semibold tracking-tight">
                 {localUser.name || localUser.username || "Unknown User"}
               </h1>
-              <p className="text-zinc-400 mt-1">@{localUser.username}</p>
-              {localUser.bio ? (
-                <p className="text-zinc-300 mt-2 max-w-md">{localUser.bio}</p>
-              ) : (
-                <p className="text-zinc-500 mt-2 italic">No bio available</p>
+              {localUser.username && (
+                <p className="text-zinc-400 mt-1">@{localUser.username}</p>
               )}
+              <p className="text-zinc-300 mt-2 max-w-md">
+                {localUser.bio || <span className="italic text-zinc-500">No bio available</span>}
+              </p>
             </>
           ) : (
             <div className="flex flex-col gap-3 max-w-md mt-1">
@@ -135,36 +128,36 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Your name"
-                className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full p-2 rounded bg-zinc-800 border border-zinc-700"
               />
               <textarea
                 name="bio"
                 value={formData.bio}
                 onChange={handleChange}
-                placeholder="Your bio"
-                className="w-full p-2 rounded bg-zinc-800 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 rows={3}
+                className="w-full p-2 rounded bg-zinc-800 border border-zinc-700"
               />
               {error && <p className="text-red-400 text-sm">{error}</p>}
             </div>
           )}
         </div>
 
-        {/* Stats section — always visible under the top block */}
-        <div className="mt-6 flex gap-8 text-center justify-center sm:justify-start">
+        {/* Stats */}
+        <div className="mt-6 flex gap-8 text-center">
           <div>
             <div className="text-2xl font-semibold text-violet-400">
               {localUser.albumsCount || 0}
             </div>
             <div className="text-sm text-zinc-400">Albums</div>
           </div>
+
           <div>
             <div className="text-2xl font-semibold text-violet-400">
               {localUser.reviewsCount || 0}
             </div>
             <div className="text-sm text-zinc-400">Reviews</div>
           </div>
+
           <div>
             <div className="text-2xl font-semibold text-violet-400">
               {localUser.followersCount || 0}
@@ -174,19 +167,19 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
         </div>
       </div>
 
-      {/* Edit Buttons */}
-      <div className="flex flex-col items-end gap-2 mt-4">
-        <div className="flex gap-2 items-center">
-          {!isEditing ? (
+      {/* Actions (Decided Internally Based on isSelf) */}
+      <div className="flex justify-end mt-4 gap-2">
+        {isSelf ? (
+          !isEditing ? (
             <>
               <ShareButton
-                url={localUser?._id ? `/profile/user/${localUser._id}` : "/profile"}
+                url={`/profile/user/${localUser._id ?? localUser.id}`}
                 label="Share Profile"
                 size="sm"
               />
               <button
                 onClick={() => setIsEditing(true)}
-                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-800 transition"
+                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-800"
               >
                 Edit
               </button>
@@ -196,19 +189,32 @@ export default function UserHeader({ user, loading }: UserHeaderProps) {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white bg-green-600 hover:bg-green-500 transition"
+                className="rounded-lg px-3 py-1 text-sm bg-green-600 hover:bg-green-500"
               >
                 {saving ? "Saving..." : "Save"}
               </button>
               <button
                 onClick={() => setIsEditing(false)}
-                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-800 transition"
+                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm hover:bg-zinc-800"
               >
                 Cancel
               </button>
             </>
-          )}
-        </div>
+          )
+        ) : (
+          <>
+            <ShareButton
+              url={`/profile/user/${localUser.id}`}
+              label="Share Profile"
+              size="sm"
+            />
+            <FollowButton
+              targetUserId={localUser.id}
+              initialFollowing={localUser.viewer?.youFollow}
+              initialFollowersCount={localUser.followersCount}
+            />
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { SavedAlbum } from "@/app/utils/top5";
+import { SavedAlbum } from "@/app/utils/albumsGrid";
 
 export default function FavoritesEditableGrid({
   albums,

@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import SavedAlbumsGrid from "@/app/(routes)//profile/SavedAlbumsGrid";
-import FavoritesEditableGrid from "@/app/(routes)/profile/TopFiveEditableGrid";
+import SavedAlbumsGrid from "@/app/(routes)/profile/components/SavedAlbumsGrid";
+import FavoritesEditableGrid from "@/app/(routes)/profile/components/TopFiveEditableGrid";
 import { useFavoritesTop5 } from "@/app/hooks/useTop5";
 import {
   mapFavoritesToSavedAlbums,
   putFavoritesTop5,
   dispatchFavoritesUpdated,
   FavoritePutItem,
-} from "@/app/utils/top5";
+} from "@/app/utils/albumsGrid";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 
 
