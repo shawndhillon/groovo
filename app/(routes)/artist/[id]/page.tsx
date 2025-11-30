@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Header from "../../components/Header";
+import Header from "@/app/components/Header";
 import ArtistHeader from "./ArtistHeader";
 import ArtistAlbums from "./ArtistAlbums";
-import { useArtist } from "../../hooks/useArtist";
+import { useArtist } from "@/app/hooks/useArtist";
 
 interface ArtistPageProps {
   params: Promise<{ id: string }>;

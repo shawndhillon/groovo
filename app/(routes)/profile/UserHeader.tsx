@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ShareButton from "../components/ShareButton";
+import ShareButton from "@/app/components/ShareButton";
 
 interface UserHeaderProps {
   user: any;

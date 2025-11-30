@@ -12,7 +12,7 @@ function getUserId(session: any): string | null {
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { albumId: string } }
+  { params }: { params: Promise<{ albumId: string }> }
 ) {
 
   const { albumId: rawAlbumId } = await params; 

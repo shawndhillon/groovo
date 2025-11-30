@@ -2,11 +2,11 @@
 
 import AddToLibraryButton from "@/app/components/AddToLibraryButton";
 import { useState, useEffect } from "react";
-import Header from "../../components/Header";
+import Header from "@/app/components/Header";
 import AlbumHeader from "./AlbumHeader";
 import ReviewSection from "./ReviewSection";
-import CompactTracklist from "../../components/CompactTracklist";
-import { useAlbum } from "../../hooks/useAlbum";
+import CompactTracklist from "@/app/components/CompactTracklist";
+import { useAlbum } from "@/app/hooks/useAlbum";
 
 interface AlbumPageProps {
   params: Promise<{ id: string }>;

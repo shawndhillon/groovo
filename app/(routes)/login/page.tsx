@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import Header from "../components/Header";
+import Header from "@/app/components/Header";
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");

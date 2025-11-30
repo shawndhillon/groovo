@@ -25,10 +25,10 @@ import { useEffect, useState } from "react";
 import Header from "@/app/components/Header";
 import CommentSection from "@/app/components/comments/CommentSection";
 
-import { useReviewDetails } from "../../hooks/useReviewDetails";
-import { ReviewHeader } from "../../components/reviews/ReviewHeader";
-import { AlbumSpotlight } from "../../components/reviews/AlbumSpotlight";
-import { ReviewerSidebar } from "../../components/reviews/ReviewSidebar";
+import { useReviewDetails } from "@/app/hooks/useReviewDetails";
+import { ReviewHeader } from "@/app/components/reviews/ReviewHeader";
+import { AlbumSpotlight } from "@/app/components/reviews/AlbumSpotlight";
+import { ReviewerSidebar } from "@/app/components/reviews/ReviewSidebar";
 
 /**
  * ReviewDetailsPage

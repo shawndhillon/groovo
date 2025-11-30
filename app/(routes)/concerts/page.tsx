@@ -1,7 +1,7 @@
 "use client";
 
-import Header from "../components/Header";
-import ConcertFeed from "../components/ConcertFeed";
+import Header from "@/app/components/Header";
+import ConcertFeed from "@/app/components/ConcertFeed";
 
 /**
  * Concerts Page

@@ -13,11 +13,11 @@
 
 "use client";
 import { useState } from "react";
-import Header from "../components/Header";
-import { useCurrentUser } from "../hooks/useCurrentUser";
-import { useUserReviews } from "../hooks/useUserReviews";
-import { useLibrary } from "../hooks/useLibrary";
-import { useEventsbyArtist } from "../hooks/useEventsbyArtist";
+import Header from "@/app/components/Header";
+import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+import { useUserReviews } from "@/app/hooks/useUserReviews";
+import { useLibrary } from "@/app/hooks/useLibrary";
+import { useEventsbyArtist } from "@/app/hooks/useEventsbyArtist";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 

@@ -3,12 +3,12 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Header from "../components/Header";
-import UserHeader from "@/app/profile/UserHeader";
+import Header from "@/app/components/Header";
+import UserHeader from "@/app/(routes)/profile/UserHeader";
 import AddFavoriteButton from "@/app/components/AddTop5Button";
-import SavedAlbumsGrid, { SavedAlbum } from "@/app/profile/SavedAlbumsGrid";
-import { useCurrentUser } from "../hooks/useCurrentUser";
-import { useUserReviews } from "../hooks/useUserReviews";
+import SavedAlbumsGrid, { SavedAlbum } from "@/app/(routes)/profile/SavedAlbumsGrid";
+import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+import { useUserReviews } from "@/app/hooks/useUserReviews";
 import TopFiveFavoritesView from "./TopFiveFavoritesView";
 import Link from "next/link"; 
 

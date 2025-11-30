@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import ReviewsPanel from "../../components/ReviewsPanel";
-import ReviewDialog from "../../components/ReviewDialog";
+import ReviewsPanel from "@/app/components/ReviewsPanel";
+import ReviewDialog from "@/app/components/ReviewDialog";
 import type { SpotifyAlbumWithTracks } from "@/app/types/spotify";
-import { fetchReviewsPage } from "./../../utils/reviews";
-import type { UIReview } from "./../../utils/reviews";
+import { fetchReviewsPage } from "@/app/utils/reviews";
+import type { UIReview } from "@/app/utils/reviews";
 
 export default function ReviewSection({
   albumId,

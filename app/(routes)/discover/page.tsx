@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Header from "../components/Header";
+import Header from "@/app/components/Header";
 
 export default function Discover() {
   const [results, setResults] = useState<any[]>([]);

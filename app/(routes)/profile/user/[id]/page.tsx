@@ -5,9 +5,9 @@ import Header from "@/app/components/Header";
 import ShareButton from "@/app/components/ShareButton";
 import { useUserReviews } from "@/app/hooks/useUserReviews";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
-import SavedAlbumsGrid, { SavedAlbum } from "@/app/profile/SavedAlbumsGrid";
-import TopFiveFavoritesView from "@/app/profile/TopFiveFavoritesView";
-import UserHeader from "@/app/profile/UserHeader";
+import SavedAlbumsGrid, { SavedAlbum } from "@/app/(routes)/profile/SavedAlbumsGrid";
+import TopFiveFavoritesView from "@/app/(routes)/profile/TopFiveFavoritesView";
+import UserHeader from "@/app/(routes)/profile/UserHeader";
 import { useEffect, useMemo, useState } from "react";
 
 type Params = { id: string };

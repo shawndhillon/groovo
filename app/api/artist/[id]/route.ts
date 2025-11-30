@@ -8,9 +8,9 @@ const spotifyApi = new SpotifyWebApi({
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   try {
     // Get client credentials token
@@ -24,7 +24,7 @@ export async function GET(
     // Fetch artist albums (all types, market: US)
     const albumsResponse = await spotifyApi.getArtistAlbums(id, {
       include_groups: "album,single,compilation",
-      market: "US",
+      country: "US",
       limit: 50, // max per request
     });
 

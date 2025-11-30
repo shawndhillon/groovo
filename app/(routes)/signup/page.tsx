@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import Header from "../components/Header";
+import Header from "@/app/components/Header";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
