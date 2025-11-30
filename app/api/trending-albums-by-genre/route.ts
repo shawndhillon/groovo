@@ -1,3 +1,11 @@
+import type { LastFMAlbum, LastFMTopAlbumsResponse } from "@/app/types/lastfm";
+import {
+  callLastFMAPI,
+  convertLastFMImages,
+  createLastFMAlbumId,
+  normalizeLastFMArray,
+} from "@/app/utils/lastfm";
+import { errorResponse, notFoundResponse, serverErrorResponse } from "@/app/utils/response";
 import { NextResponse } from "next/server";
 // Documentation: https://www.last.fm/api/intro
 /**
@@ -17,126 +25,64 @@ const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 const spotifyAlbumCache = new Map<string, { data: any; expiresAt: number }>();
 const SPOTIFY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
-// Last.fm API base URL
-const LASTFM_API_BASE = "https://ws.audioscrobbler.com/2.0/";
-const LASTFM_API_KEY = process.env.LASTFM_API_KEY || "";
-
-/**
- * Convert Last.fm image format to Spotify image format
- * Last.fm: [{ "#text": "url", "size": "small" }, ...]
- * Spotify: [{ "url": "url", "height": 640, "width": 640 }, ...]
- */
-function convertLastFMImages(lastfmImage: any): Array<{ url: string; height?: number; width?: number }> {
-  if (!lastfmImage) return [];
-
-  // Handle array of images
-  const imageArray = Array.isArray(lastfmImage) ? lastfmImage : [lastfmImage];
-
-  // Filter out empty images and convert format
-  const converted = imageArray
-    .filter((img: any) => img && img["#text"] && img["#text"].trim().length > 0)
-    .map((img: any) => {
-      const url = img["#text"];
-      // Prefer larger images
-      const sizeMap: Record<string, number> = {
-        "small": 34,
-        "medium": 64,
-        "large": 174,
-        "extralarge": 300,
-        "mega": 600,
-      };
-      const size = sizeMap[img.size?.toLowerCase() || ""] || 300;
-
-      return {
-        url,
-        height: size,
-        width: size,
-      };
-    });
-
-  return converted.sort((a, b) => (b.height || 0) - (a.height || 0));
-}
-
-
-// Get top albums by genre from Last.fm
-async function getTopAlbumsFromLastFM(genre: string, limit: number = 5, page: number = 1): Promise<any[]> {
-  if (!LASTFM_API_KEY) {
-    throw new Error("LASTFM_API_KEY environment variable is not set");
-  }
-
-  const params = new URLSearchParams({
-    method: "tag.getTopAlbums",
+async function getTopAlbumsFromLastFM(genre: string, limit: number = 5, page: number = 1): Promise<LastFMAlbum[]> {
+  const data = (await callLastFMAPI("tag.getTopAlbums", {
     tag: genre,
-    api_key: LASTFM_API_KEY,
-    format: "json",
     limit: limit.toString(),
     page: page.toString(),
-  });
+  })) as LastFMTopAlbumsResponse;
 
-  const response = await fetch(`${LASTFM_API_BASE}?${params.toString()}`);
-
-  if (!response.ok) {
-    throw new Error(`Last.fm API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  if (data.error) {
-    const errorCode = data.error;
-    const errorMsg = data.message || String(errorCode) || "Unknown error";
-
-    if (errorCode === 6) {
-      throw new Error(`Invalid genre/tag: "${genre}" is not a valid Last.fm tag`);
-    }
-
-    throw new Error(`Last.fm API error: ${errorMsg}`);
-  }
-
+  // Last.fm API can return single object or array - normalize to array
   const albums = data.albums?.album || [];
+  const albumArray = normalizeLastFMArray(albums);
 
-  const albumArray = Array.isArray(albums) ? albums : albums ? [albums] : [];
-
-  // Filter out any invalid entries
-  const validAlbums = albumArray.filter((album: any) =>
+  // Filter out any invalid entries (must have name and artist)
+  const validAlbums = albumArray.filter((album: LastFMAlbum) =>
     album && album.name && (album.artist?.name || album.artist)
   );
 
-  // Return valid albums
+  // Return valid albums (slice to ensure we don't exceed limit)
   return validAlbums.slice(0, limit);
 }
 
-// Enrich Last.fm album data with Spotify data
-async function enrichWithSpotifyData(albums: any[]): Promise<any[]> {
+async function enrichWithSpotifyData(albums: LastFMAlbum[]): Promise<any[]> {
+  // If Spotify credentials not configured, return Last.fm data as-is
   if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
     return albums;
   }
 
   try {
+    // Dynamic import to avoid loading Spotify library if not needed
     const SpotifyWebApi = (await import("spotify-web-api-node")).default;
     const spotify = new SpotifyWebApi({
       clientId: process.env.SPOTIFY_CLIENT_ID!,
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
     });
 
+    // Get client credentials token (no user auth needed for search)
     const tokenData = await spotify.clientCredentialsGrant();
     spotify.setAccessToken(tokenData.body.access_token);
 
     // Process albums in parallel with caching and timeout
+    // Use Promise.allSettled so one failure doesn't block others
     const enrichedAlbums = await Promise.allSettled(
-      albums.map(async (album: any) => {
+      albums.map(async (album: LastFMAlbum) => {
         try {
-          // Check cache
-          const cacheKey = `${album.name}::${album.artist?.name || ""}`;
+          const artistName = typeof album.artist === "string" ? album.artist : album.artist?.name || "";
+
+          // Check cache first (24-hour TTL for Spotify lookups)
+          const cacheKey = `${album.name}::${artistName}`;
           const cached = spotifyAlbumCache.get(cacheKey);
           if (cached && Date.now() < cached.expiresAt) {
             return {
               ...cached.data,
-              playcount: parseInt(album.playcount) || 0,
+              playcount: album.playcount ? (parseInt(album.playcount, 10) || 0) : 0, // Keep Last.fm playcount
             };
           }
 
-          // Search for album on Spotify with timeout (3 seconds max)
-          const query = `album:"${album.name}" artist:"${album.artist?.name || ""}"`;
+          // Search for album on Spotify with 3-second timeout
+          // Timeout prevents slow searches from blocking the entire response
+          const query = `album:"${album.name}" artist:"${artistName}"`;
           const searchPromise = spotify.searchAlbums(query, { limit: 1 });
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error("Search timeout")), 3000)
@@ -153,15 +99,15 @@ async function enrichWithSpotifyData(albums: any[]): Promise<any[]> {
               artists: spotifyAlbum.artists?.map((a: any) => ({ id: a.id, name: a.name })) || [],
               images: spotifyAlbum.images && spotifyAlbum.images.length > 0
                 ? spotifyAlbum.images
-                : convertLastFMImages(album.image),
+                : convertLastFMImages(album.image), // Fallback to Last.fm images
               release_date: spotifyAlbum.release_date || "",
               precision: spotifyAlbum.release_date_precision || "day",
               url: spotifyAlbum.external_urls?.spotify || "",
               popularity: 0, // Skip popularity fetch for speed
-              playcount: parseInt(album.playcount) || 0,
+              playcount: album.playcount ? (parseInt(album.playcount, 10) || 0) : 0, // Keep Last.fm playcount
             };
 
-            // Cache result
+            // Cache result for 24 hours
             spotifyAlbumCache.set(cacheKey, {
               data: result,
               expiresAt: Date.now() + SPOTIFY_CACHE_TTL,
@@ -170,15 +116,21 @@ async function enrichWithSpotifyData(albums: any[]): Promise<any[]> {
             return result;
           }
         } catch (error) {
-
+          const artistName = typeof album.artist === "string" ? album.artist : album.artist?.name || "";
+          console.error(`Error enriching album "${album.name}" with Spotify data:`, {
+            error: error instanceof Error ? error.message : String(error),
+            album: album.name,
+            artist: artistName,
+          });
+          // Fall through to Last.fm fallback
         }
 
-        // Fallback to Last.fm data
+        // Fallback to Last.fm data only (still useful even without Spotify)
         const lastfmImages = convertLastFMImages(album.image);
-        const artistName = album.artist?.name || (typeof album.artist === 'string' ? album.artist : '');
+        const artistName = typeof album.artist === 'string' ? album.artist : (album.artist?.name || '');
 
         return {
-          id: `lastfm::${encodeURIComponent(album.name)}::${encodeURIComponent(artistName)}`,
+          id: createLastFMAlbumId(album.name || '', artistName),
           name: album.name,
           artists: album.artist ? [{ name: artistName }] : [],
           images: lastfmImages,
@@ -186,7 +138,7 @@ async function enrichWithSpotifyData(albums: any[]): Promise<any[]> {
           precision: "day" as const,
           url: album.url || "",
           popularity: 0,
-          playcount: parseInt(album.playcount) || 0,
+          playcount: album.playcount ? (parseInt(album.playcount, 10) || 0) : 0,
         };
       })
     );
@@ -197,9 +149,9 @@ async function enrichWithSpotifyData(albums: any[]): Promise<any[]> {
       }
       const album = albums[index];
       const lastfmImages = convertLastFMImages(album.image);
-      const artistName = album.artist?.name || (typeof album.artist === 'string' ? album.artist : '');
+      const artistName = typeof album.artist === 'string' ? album.artist : (album.artist?.name || '');
       return {
-        id: `lastfm::${encodeURIComponent(album.name)}::${encodeURIComponent(artistName)}`,
+        id: createLastFMAlbumId(album.name, artistName),
         name: album.name,
         artists: album.artist ? [{ name: artistName }] : [],
         images: lastfmImages,
@@ -207,17 +159,19 @@ async function enrichWithSpotifyData(albums: any[]): Promise<any[]> {
         precision: "day" as const,
         url: album.url || "",
         popularity: 0,
-        playcount: parseInt(album.playcount) || 0,
+        playcount: album.playcount ? (parseInt(album.playcount, 10) || 0) : 0,
       };
     });
   } catch (error) {
-    console.error("Error enriching with Spotify data:", error);
+    console.error("Error enriching with Spotify data:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     // Return Last.fm data as is if enrichment fails
-    return albums.map((album: any) => {
+    return albums.map((album: LastFMAlbum) => {
       const lastfmImages = convertLastFMImages(album.image);
-      const artistName = album.artist?.name || (typeof album.artist === 'string' ? album.artist : '');
+      const artistName = typeof album.artist === 'string' ? album.artist : (album.artist?.name || '');
       return {
-        id: `lastfm::${encodeURIComponent(album.name)}::${encodeURIComponent(artistName)}`,
+        id: createLastFMAlbumId(album.name, artistName),
         name: album.name,
         artists: album.artist ? [{ name: artistName }] : [],
         images: lastfmImages,
@@ -225,7 +179,7 @@ async function enrichWithSpotifyData(albums: any[]): Promise<any[]> {
         precision: "day" as const,
         url: album.url || "",
         popularity: 0,
-        playcount: parseInt(album.playcount) || 0,
+        playcount: album.playcount ? (parseInt(album.playcount, 10) || 0) : 0,
       };
     });
   }
@@ -237,20 +191,22 @@ export async function GET(request: Request) {
   const limitParam = searchParams.get("limit");
   const pageParam = searchParams.get("page");
 
-  // Validate genre
+  // Validate genre parameter
   if (!genreInput || genreInput.length === 0) {
-    return NextResponse.json(
-      { error: "Genre parameter is required" },
-      { status: 400 }
-    );
+    return errorResponse("Genre parameter is required", 400);
+  }
+
+  // Validate genre length to prevent extremely long inputs
+  if (genreInput.length > 100) {
+    return errorResponse("Genre name too long (max 100 characters)", 400);
   }
 
   try {
     const genre = genreInput.toLowerCase();
-    const limit = limitParam ? Math.min(parseInt(limitParam) || 5, 50) : 5; // Max 50 per Last.fm
+    const limit = limitParam ? Math.min(parseInt(limitParam) || 5, 50) : 5; // Max 50 per Last.fm API
     const page = pageParam ? Math.max(1, parseInt(pageParam) || 1) : 1;
 
-    // Check cache
+    // Check cache (only cache default page 1, limit 5 to keep cache minimal)
     const cacheKey = `lastfm::${genre}::${limit}::${page}`;
     const cached = resultCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt && page === 1 && limit === 5) {
@@ -261,41 +217,39 @@ export async function GET(request: Request) {
     }
 
     // Get top albums from Last.fm
-    let lastfmAlbums: any[] = [];
+    let lastfmAlbums: LastFMAlbum[] = [];
     try {
       lastfmAlbums = await getTopAlbumsFromLastFM(genre, limit, page);
     } catch (lastfmError: any) {
-      console.error(`Error fetching albums for genre "${genre}":`, lastfmError);
-      return NextResponse.json(
-        {
-          error: `Failed to fetch albums for genre "${genre}". ${lastfmError.message || "Try a different genre."}`
-        },
-        { status: 500 }
+      console.error(`Error fetching albums for genre "${genre}":`, {
+        error: lastfmError instanceof Error ? lastfmError.message : String(lastfmError),
+        genre,
+      });
+      return serverErrorResponse(
+        `Failed to fetch albums for genre "${genre}". ${lastfmError.message || "Try a different genre."}`
       );
     }
 
     if (lastfmAlbums.length === 0) {
-      return NextResponse.json(
-        { error: `No albums found for genre "${genre}". Try a different genre.` },
-        { status: 404 }
-      );
+      return notFoundResponse(`No albums found for genre "${genre}". Try a different genre.`);
     }
 
-    // Enrich with Spotify data if available
+    // Enrich with Spotify data if available (falls back to Last.fm if Spotify fails)
     const enrichedAlbums = await enrichWithSpotifyData(lastfmAlbums);
 
-    // Sort by popularity (Spotify) first, then by playcount (Last.fm) as fallback
+    // Sort by Spotify popularity first, then by Last.fm playcount as fallback
+    // This prioritizes albums that are popular on Spotify, but still shows Last.fm-only albums
     enrichedAlbums.sort((a, b) => {
       if (a.popularity > 0 && b.popularity > 0) {
         return b.popularity - a.popularity;
       }
-      if (a.popularity > 0) return -1;
+      if (a.popularity > 0) return -1; // Spotify albums before Last.fm-only
       if (b.popularity > 0) return 1;
-
+      // Both Last.fm-only: sort by playcount
       return (b.playcount || 0) - (a.playcount || 0);
     });
 
-    // Format response
+    // Format response (only include fields needed by frontend)
     const payload = enrichedAlbums.map((album: any) => ({
       id: album.id,
       name: album.name,
@@ -312,10 +266,10 @@ export async function GET(request: Request) {
       items: payload,
       page: page,
       limit: limit,
-      hasMore: payload.length === limit,
+      hasMore: payload.length === limit, // Indicates if there might be more pages
     };
 
-    // Cache the result
+    // Cache the result (only default queries to keep cache size manageable)
     if (page === 1 && limit === 5) {
       resultCache.set(cacheKey, {
         data: result,
@@ -325,11 +279,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error("Error fetching albums:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+    console.error("Error fetching albums:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return serverErrorResponse(error.message || "Internal server error");
   }
 }
 

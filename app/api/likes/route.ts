@@ -1,4 +1,5 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { unauthorizedResponse } from "@/app/utils/response";
 import { ensureIndexes } from "@/lib/ensure-indexes";
 import { db } from "@/lib/mongodb";
 import { LikeTargetSchema } from "@/lib/validation";
@@ -25,7 +26,7 @@ async function bumpLike(database: any, targetType: "review" | "comment", targetI
 export async function POST(req: Request) {
   await ensureIndexes();
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return unauthorizedResponse();
 
   const parsed = LikeTargetSchema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });

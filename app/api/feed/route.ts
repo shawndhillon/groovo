@@ -1,10 +1,13 @@
 
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/mongodb";
+import { getLikedItemIds } from "@/app/utils/likes";
+import { unauthorizedResponse } from "@/app/utils/response";
+import { formatReview } from "@/app/utils/reviewResponse";
+import { fetchUsersByIds } from "@/app/utils/users";
 import { ensureIndexes } from "@/lib/ensure-indexes";
-import { ObjectId } from "mongodb";
+import { db } from "@/lib/mongodb";
+import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -18,102 +21,56 @@ export async function GET(req: Request) {
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const url = new URL(req.url);
   const page = num(url.searchParams.get("page"), 1);
-  const pageSize = Math.min(num(url.searchParams.get("pageSize"), 20), 50);
+  const pageSize = Math.min(num(url.searchParams.get("pageSize"), 20), 50); // Cap at 50 for performance
 
   const database = await db();
   const follows = database.collection("follows");
   const reviews = database.collection("reviews");
-  const users = database.collection("users");
 
+  // Get all users the current user follows
   const followRows = await follows
     .find({ followerId: session.user.id })
-    .project({ _id: 0, targetUserId: 1, followingId: 1 })
+    .project({ _id: 0, targetUserId: 1 })
     .toArray();
 
+  // Build set of followed user IDs
   const followedIds = new Set<string>();
   for (const row of followRows) {
     if (row?.targetUserId) followedIds.add(String(row.targetUserId));
-    if (row?.followingId) followedIds.add(String(row.followingId));
   }
+  // Include current user's own reviews in feed
   followedIds.add(session.user.id);
 
   const authorIds = Array.from(followedIds);
 
+  // Fetch reviews from followed users (excluding deleted)
   const items = await reviews
     .find({ userId: { $in: authorIds }, deletedAt: null })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1 }) // Newest first
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .toArray();
 
-
+  // Get unique author IDs to fetch user info
   const uniqueAuthorIds = Array.from(new Set(items.map((r) => r.userId).filter(Boolean)));
 
+  // Batch fetch author information
+  const userMap = await fetchUsersByIds(uniqueAuthorIds);
 
-  const authorObjectIds: ObjectId[] = [];
-  for (const s of uniqueAuthorIds) {
-    try {
-      authorObjectIds.push(new ObjectId(s));
-    } catch {
-
-    }
-  }
-
-  const authorDocs = authorObjectIds.length
-    ? await users
-        .find(
-          { _id: { $in: authorObjectIds } },
-          { projection: { _id: 1, username: 1, name: 1, image: 1 } }
-        )
-        .toArray()
-    : [];
-
-  const byId = new Map<string, { username?: string | null; name?: string | null; image?: string | null }>();
-  for (const u of authorDocs) {
-    byId.set(String(u._id), {
-      username: u.username ?? null,
-      name: u.name ?? null,
-      image: u.image ?? null,
-    });
-  }
-
-  // Check which reviews/comments the user has liked
+  // Check which reviews the current user has liked
   const reviewIds = items.map((r) => String(r._id));
-  const likes = await database.collection("likes")
-    .find({
-      targetType: "review",
-      targetId: { $in: reviewIds },
-      userId: session.user.id,
-    })
-    .toArray();
+  const likedReviewIds = await getLikedItemIds(session.user.id, "review", reviewIds);
 
-  const likedReviewIds = new Set(likes.map((l) => l.targetId));
-
-  const out = items.map((r) => ({
-    _id: String(r._id),
-    id: String(r._id),
-    userId: r.userId,
-    albumId: r.albumId,
-    rating: r.rating,
-    body: r.body,
-    likeCount: r.likeCount ?? 0,
-    commentCount: r.commentCount ?? 0,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-    albumSnapshot: r.albumSnapshot ?? null,
-    author: {
-      id: r.userId,
-      username: byId.get(String(r.userId))?.username ?? null,
-      name: byId.get(String(r.userId))?.name ?? null,
-      image: byId.get(String(r.userId))?.image ?? null,
-    },
-    viewerLiked: likedReviewIds.has(String(r._id)),
-  }));
+  // Format response with author info and like status
+  const out = items.map((r) => {
+    const author = userMap.get(r.userId) ?? null;
+    return formatReview(r, author, likedReviewIds.has(String(r._id)));
+  });
 
   return NextResponse.json({ items: out });
 }

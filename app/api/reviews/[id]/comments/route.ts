@@ -1,8 +1,10 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getLikedItemIds } from "@/app/utils/likes";
+import { errorResponse, notFoundResponse, unauthorizedResponse } from "@/app/utils/response";
+import { fetchUsersByIds } from "@/app/utils/users";
 import { ensureIndexes } from "@/lib/ensure-indexes";
 import { db } from "@/lib/mongodb";
-import { CommentCreateSchema, PageSchema } from "@/lib/validation";
-import { ObjectId } from "mongodb";
+import { CommentCreateSchema, PageSchema, validateObjectId } from "@/lib/validation";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
@@ -24,27 +26,27 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function POST(req: Request, { params }: Ctx) {
   await ensureIndexes();
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return unauthorizedResponse();
 
   const parsed = CommentCreateSchema.safeParse(await req.json());
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });
+  if (!parsed.success) return errorResponse(parsed.error.message, 400);
 
   const { id } = await params;
   const database = await db();
-  const reviewId = new ObjectId(id);
+  const reviewId = validateObjectId(id, "Invalid review ID");
 
   const review = await database.collection("reviews").findOne({ _id: reviewId, deletedAt: null });
-  if (!review) return NextResponse.json({ error: "Review not found" }, { status: 404 });
+  if (!review) return notFoundResponse("Review not found");
 
-  let parentId: ObjectId | null = null;
+  let parentId = null;
   if (parsed.data.parentId) {
-    parentId = new ObjectId(parsed.data.parentId);
+    parentId = validateObjectId(parsed.data.parentId, "Invalid parent comment ID");
     const parent = await database.collection("comments").findOne({
       _id: parentId,
       reviewId: String(reviewId),
       deletedAt: null,
     });
-    if (!parent) return NextResponse.json({ error: "Parent comment not found" }, { status: 400 });
+    if (!parent) return errorResponse("Parent comment not found", 400);
   }
 
   const now = new Date();
@@ -81,7 +83,7 @@ export async function GET(req: Request, { params }: Ctx) {
 
   const { id } = await params;
   const database = await db();
-  const reviewId = new ObjectId(id);
+  const reviewId = validateObjectId(id, "Invalid review ID");
 
   const session = await getServerSession(authOptions);
   const viewerId = session?.user?.id ?? null;
@@ -119,58 +121,22 @@ export async function GET(req: Request, { params }: Ctx) {
   const uniqueUserIds = Array.from(new Set(allComments.map((c) => c.userId).filter(Boolean)));
 
   // Fetch user info for all comment authors
-  const userObjectIds: ObjectId[] = [];
-  for (const s of uniqueUserIds) {
-    try {
-      userObjectIds.push(new ObjectId(s));
-    } catch {
-      // Skip invalid ObjectIds
-    }
-  }
-
-  const users = database.collection("users");
-  const userDocs = userObjectIds.length
-    ? await users
-        .find(
-          { _id: { $in: userObjectIds } },
-          { projection: { _id: 1, username: 1, name: 1, image: 1 } }
-        )
-        .toArray()
-    : [];
-
-  const userById = new Map<string, { username?: string | null; name?: string | null; image?: string | null }>();
-  for (const u of userDocs) {
-    userById.set(String(u._id), {
-      username: u.username ?? null,
-      name: u.name ?? null,
-      image: u.image ?? null,
-    });
-  }
+  const userMap = await fetchUsersByIds(uniqueUserIds);
 
   // Check which comments the user has liked
-  const likedCommentIds = new Set<string>();
-  if (viewerId && allCommentIds.length > 0) {
-    const likes = await database.collection("likes")
-      .find({
-        targetType: "comment",
-        targetId: { $in: allCommentIds },
-        userId: viewerId,
-      })
-      .toArray();
-    likes.forEach((l) => likedCommentIds.add(l.targetId));
-  }
+  const likedCommentIds = await getLikedItemIds(viewerId, "comment", allCommentIds);
 
   // Add viewerLiked and user properties to items and replies
   const itemsWithLikes = items.map((c) => ({
     ...c,
     viewerLiked: likedCommentIds.has(String(c._id)),
-    user: userById.get(c.userId) || null,
+    user: userMap.get(c.userId) || null,
   }));
 
   const repliesWithLikes = replies.map((r) => ({
     ...r,
     viewerLiked: likedCommentIds.has(String(r._id)),
-    user: userById.get(r.userId) || null,
+    user: userMap.get(r.userId) || null,
   }));
 
   return NextResponse.json({ items: itemsWithLikes, replies: repliesWithLikes });

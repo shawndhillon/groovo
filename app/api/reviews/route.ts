@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/mongodb";
+import { getLikedItemIds } from "@/app/utils/likes";
+import { errorResponse, serverErrorResponse, unauthorizedResponse } from "@/app/utils/response";
+import { formatReview } from "@/app/utils/reviewResponse";
+import { fetchUsersByIds } from "@/app/utils/users";
 import { ensureIndexes } from "@/lib/ensure-indexes";
+import { db } from "@/lib/mongodb";
 import { PageSchema, ReviewCreateSchema } from "@/lib/validation";
-import { ObjectId } from "mongodb";
+import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 
 /**
  * Docs:
@@ -19,10 +22,10 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   await ensureIndexes();
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return unauthorizedResponse();
 
   const parsed = ReviewCreateSchema.safeParse(await req.json());
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });
+  if (!parsed.success) return errorResponse(parsed.error.message, 400);
 
   const { albumId, rating, body, album } = parsed.data;
   const database = await db();
@@ -45,9 +48,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: String(res.insertedId) }, { status: 201 });
   } catch (e: any) {
     if (e?.code === 11000) {
-      return NextResponse.json({ error: "You already reviewed this album." }, { status: 409 });
+      return errorResponse("You already reviewed this album.", 409);
     }
-    return NextResponse.json({ error: "Failed to create review" }, { status: 500 });
+    console.error("Error creating review:", e);
+    return serverErrorResponse("Failed to create review");
   }
 }
 
@@ -94,60 +98,19 @@ export async function GET(req: Request) {
   if (global) {
     const session = await getServerSession(authOptions);
     const viewerId = session?.user?.id ?? null;
-    const users = database.collection("users");
     const uniqueUserIds = Array.from(new Set(items.map((r) => r.userId).filter(Boolean)));
-    
-    const authorObjectIds: ObjectId[] = [];
-    for (const s of uniqueUserIds) {
-      try {
-        authorObjectIds.push(new ObjectId(s));
-      } catch {
-        // Skip invalid ObjectIds
-      }
-    }
 
-    const authorDocs = authorObjectIds.length
-      ? await users
-          .find(
-            { _id: { $in: authorObjectIds } },
-            { projection: { _id: 1, username: 1, name: 1, image: 1 } }
-          )
-          .toArray()
-      : [];
-
-    const byId = new Map<string, { username?: string | null; name?: string | null; image?: string | null }>();
-    for (const u of authorDocs) {
-      byId.set(String(u._id), {
-        username: u.username ?? null,
-        name: u.name ?? null,
-        image: u.image ?? null,
-      });
-    }
+    // Batch fetch author information
+    const userMap = await fetchUsersByIds(uniqueUserIds);
 
     // Check which reviews the user has liked
     const reviewIds = items.map((r) => String(r._id));
-    const likedReviewIds = new Set<string>();
-    if (viewerId && reviewIds.length > 0) {
-      const likes = await database.collection("likes")
-        .find({
-          targetType: "review",
-          targetId: { $in: reviewIds },
-          userId: viewerId,
-        })
-        .toArray();
-      likes.forEach((l) => likedReviewIds.add(l.targetId));
-    }
+    const likedReviewIds = await getLikedItemIds(viewerId, "review", reviewIds);
 
-    const out = mappedItems.map((r) => ({
-      ...r,
-      author: {
-        id: r.userId,
-        username: byId.get(String(r.userId))?.username ?? null,
-        name: byId.get(String(r.userId))?.name ?? null,
-        image: byId.get(String(r.userId))?.image ?? null,
-      },
-      viewerLiked: likedReviewIds.has(String(r._id)),
-    }));
+    const out = items.map((r) => {
+      const author = userMap.get(r.userId) ?? null;
+      return formatReview(r, author, likedReviewIds.has(String(r._id)));
+    });
 
     return NextResponse.json({ items: out });
   }

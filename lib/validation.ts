@@ -1,4 +1,28 @@
+import { ObjectId } from "mongodb";
 import { z } from "zod";
+
+export function safeObjectId(id: string | null | undefined): ObjectId | null {
+  if (!id) return null;
+  try {
+    return new ObjectId(id);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validates ObjectId format and throws if invalid
+ */
+export function validateObjectId(
+  id: string,
+  errorMessage = "Invalid ID"
+): ObjectId {
+  try {
+    return new ObjectId(id);
+  } catch {
+    throw new Error(errorMessage);
+  }
+}
 
 export const PageSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

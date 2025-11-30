@@ -1,10 +1,11 @@
 
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { db } from "@/lib/mongodb";
+import { errorResponse, NO_CACHE_HEADERS, serverErrorResponse, unauthorizedResponse } from "@/app/utils/response";
 import { ensureIndexes } from "@/lib/ensure-indexes";
+import { db } from "@/lib/mongodb";
 import { FollowToggleSchema, PageSchema } from "@/lib/validation";
+import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,19 +15,20 @@ export async function POST(req: Request) {
   await ensureIndexes();
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
+    return unauthorizedResponse();
   }
 
   const parsed = FollowToggleSchema.safeParse(await req.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.message }, { status: 400, headers: { "Cache-Control": "no-store" } });
+    return errorResponse(parsed.error.message, 400);
   }
 
   const followerId = session.user.id;
   const { targetUserId, action } = parsed.data;
 
+  // Prevent self following
   if (followerId === targetUserId) {
-    return NextResponse.json({ error: "Cannot follow yourself" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+    return errorResponse("Cannot follow yourself", 400);
   }
 
   const database = await db();
@@ -34,28 +36,32 @@ export async function POST(req: Request) {
 
   if (action === "follow") {
     try {
+      // Create follow relationship (unique index prevents duplicates)
       await follows.insertOne({
         followerId,
-        followingId: targetUserId,
         targetUserId,
         createdAt: new Date(),
-      } as any);
+      });
       const followersCount = await follows.countDocuments({ targetUserId });
-      return NextResponse.json({ following: true, followersCount }, { headers: { "Cache-Control": "no-store" } });
+      return NextResponse.json({ following: true, followersCount }, { headers: NO_CACHE_HEADERS });
     } catch (e: any) {
+      // Handle duplicate follow (error code 11000 = duplicate key)
+      // Return success since user is already following
       if (e?.code === 11000) {
         const followersCount = await follows.countDocuments({ targetUserId });
-        return NextResponse.json({ following: true, followersCount }, { headers: { "Cache-Control": "no-store" } });
+        return NextResponse.json({ following: true, followersCount }, { headers: NO_CACHE_HEADERS });
       }
-      return NextResponse.json({ error: "Failed to follow" }, { status: 500, headers: { "Cache-Control": "no-store" } });
+      console.error("Error following user:", e);
+      return serverErrorResponse("Failed to follow");
     }
   } else {
+    // Unfollow: delete relationship
     await follows.deleteMany({
       followerId,
-      $or: [{ targetUserId }, { followingId: targetUserId }],
+      targetUserId,
     });
     const followersCount = await follows.countDocuments({ targetUserId });
-    return NextResponse.json({ following: false, followersCount }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ following: false, followersCount }, { headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -81,13 +87,13 @@ export async function GET(req: Request) {
 
   if (followersOf) {
     const items = await follows
-      .find({ $or: [{ targetUserId: followersOf }, { followingId: followersOf }] })
+      .find({ targetUserId: followersOf })
       .sort({ createdAt: -1 })
       .skip((page.page - 1) * page.pageSize)
       .limit(page.pageSize)
       .toArray();
 
-    return NextResponse.json({ items }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ items }, { headers: NO_CACHE_HEADERS });
   }
 
   let who = followingOf;
@@ -96,7 +102,7 @@ export async function GET(req: Request) {
     if (session?.user?.id) who = session.user.id;
   }
   if (!who) {
-    return NextResponse.json({ error: "Missing userId" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+    return errorResponse("Missing userId", 400);
   }
 
   const items = await follows
@@ -106,5 +112,5 @@ export async function GET(req: Request) {
     .limit(page.pageSize)
     .toArray();
 
-  return NextResponse.json({ items }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ items }, { headers: NO_CACHE_HEADERS });
 }

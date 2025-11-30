@@ -40,6 +40,11 @@ export default function FollowButton({
         }),
       });
 
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
       const j = await res.json().catch(() => ({}));
       if (!res.ok || typeof j?.following !== "boolean") {
         setFollowing(!next);

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import CommentSection from "@/app/components/comments/CommentSection";
 import type { FeedItem } from "@/app/types/feed";
 import {
@@ -12,6 +11,7 @@ import {
   handle,
   stars,
 } from "@/app/utils/feed";
+import Link from "next/link";
 
 type FeedReviewCardProps = {
   review: FeedItem;
@@ -37,7 +37,7 @@ export default function FeedReviewCard({ review, reviewId }: FeedReviewCardProps
         </Link>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <Link
                 href={`/album/${review.albumId}`}
@@ -49,7 +49,7 @@ export default function FeedReviewCard({ review, reviewId }: FeedReviewCardProps
               <div className="truncate text-sm text-zinc-400">{artists}</div>
             </div>
 
-            <div className="text-right">
+            <div className="shrink-0 text-right">
               <div className="text-base font-semibold text-violet-300">
                 {stars(review.rating)}
               </div>
