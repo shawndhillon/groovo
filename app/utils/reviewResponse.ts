@@ -1,7 +1,26 @@
 /**
- * Review Formatting Utilities (Server-Side)
+ * Purpose:
+ *   Server-side review formatting utilities for API responses
  *
- * Utilities for formatting review objects in API responses.
+ * Scope:
+ *   - Used by review API routes to format responses
+ *   - Ensures consistent review shape across endpoints
+ *
+ * Role:
+ *   - Formats MongoDB review documents into ServerReviewResponse shape
+ *   - Attaches author information and viewer like status
+ *   - Handles optional fields and null values consistently
+ *
+ * Deps:
+ *   - app/types/reviews for ReviewAuthor type
+ *   - app/utils/users for UserInfo type
+ *
+ * Notes:
+ *   - Always includes likeCount and commentCount with defaults
+ *   - Author and viewerLiked are optional and only added when provided
+ *
+ * Contributions (Shawn):
+ *   - Implemented review formatting utilities and response shape
  */
 
 import type { ReviewAuthor } from "@/app/types/reviews";

@@ -1,7 +1,29 @@
 /**
- * GET /api/genre-seeds
- * Returns a list of genres from Last.fm API
- * Fetches from Last.fm's chart.getTopTags endpoint
+ * Purpose:
+ *   Genre seeds API endpoint for music genre discovery
+ *
+ * Scope:
+ *   - Used by GenreSelector component to populate genre lists
+ *   - Provides both comprehensive genre list and popular genres
+ *
+ * Role:
+ *   - Fetches genre tags from Last.fm API (chart.getTopTags)
+ *   - Filters out invalid tags (user collections, cities, etc.)
+ *   - Returns popular genres organized by category
+ *   - Caches results to reduce API calls
+ *
+ * Deps:
+ *   - Last.fm API for genre tag data
+ *   - app/utils/lastfm for API calls (callLastFMAPI) and tag filtering (filterInvalidTags, normalizeLastFMArray)
+ *   - app/types/lastfm for type definitions
+ *
+ * Notes:
+ *   - Uses in-memory cache with 24-hour TTL (resets on server restart)
+ *   - Returns curated popular genres even if Last.fm API fails
+ *   - Filters tags by length (2-50 chars), format, and blacklist of invalid terms
+ *
+ * Contributions (Shawn):
+ *   - Implemented genre seeds endpoint with Last.fm integration and caching
  */
 
 import type { LastFMTag, LastFMTopTagsResponse } from "@/app/types/lastfm";

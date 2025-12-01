@@ -1,3 +1,30 @@
+/**
+ * Purpose:
+ *   User feed API endpoint for following-based review feed
+ *
+ * Scope:
+ *   - Used by home page feed section
+ *   - Shows reviews from users the current user follows
+ *
+ * Role:
+ *   - Fetches reviews from followed users
+ *   - Includes current user's own reviews in feed
+ *   - Formats reviews with author info and viewer like status
+ *   - Supports pagination for large feeds (max 50 items per page)
+ *
+ * Deps:
+ *   - app/utils/reviewResponse for formatting review data
+ *   - app/utils/users for batch fetching author information
+ *   - app/utils/likes for checking viewer like status
+ *   - lib/ensure-indexes for database indexes
+ *   - app/api/auth/[...nextauth] for session management
+ *
+ * Notes:
+ *   - Includes own reviews so users see their own activity in feed
+ *
+ * Contributions (Shawn):
+ *   - Implemented feed API endpoint with following-based filtering
+ */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getLikedItemIds } from "@/app/utils/likes";

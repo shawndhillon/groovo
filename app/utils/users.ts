@@ -1,4 +1,26 @@
-
+/**
+ * Purpose:
+ *   User data fetching and formatting utilities
+ *
+ * Scope:
+ *   - Used by API routes that need user information (reviews, comments, profiles)
+ *   - Used by components that display user data
+ *
+ * Role:
+ *   - Batch fetches user data by IDs for efficient queries
+ *   - Formats MongoDB user documents into consistent UserInfo shape
+ *   - Handles ObjectId conversion and validation
+ *
+ * Deps:
+ *   - lib/mongodb for database access
+ *
+ * Notes:
+ *   - Invalid ObjectIds are silently filtered out in batch operations
+ *   - Returns null for missing users rather than throwing errors
+ *
+ * Contributions (Shawn):
+ *   - Implemented user fetching utilities and batch operations
+ */
 
 import { db } from "@/lib/mongodb";
 import { ObjectId, type Document, type WithId } from "mongodb";

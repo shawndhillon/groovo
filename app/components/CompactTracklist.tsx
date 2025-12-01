@@ -1,3 +1,26 @@
+/**
+ * Purpose:
+ *   Compact tracklist component for displaying album tracks
+ *
+ * Scope:
+ *   - Used on album detail pages to show track listings
+ *   - Displays tracks in a scrollable container with formatting
+ *
+ * Role:
+ *   - Renders track list with track numbers, names, and durations
+ *   - Provides formatted duration display (MM:SS)
+ *   - Handles scrolling for albums with many tracks
+ *
+ * Deps:
+ *   - None (self-contained component)
+ *
+ * Notes:
+ *   - formatDuration function is exported but only used internally
+ *
+ * Contributions (Shawn):
+ *   - Implemented CompactTracklist component with duration formatting
+ */
+
 "use client";
 
 type Track = {

@@ -1,17 +1,40 @@
+/**
+ * Purpose:
+ *   User signup API endpoint for credential-based registration
+ *
+ * Scope:
+ *   - Used by signup page for new user registration
+ *   - Creates accounts with email, username, and password
+ *
+ * Role:
+ *   - Validates email, username, and password requirements
+ *   - Checks for existing email or username conflicts (returns 409 if exists)
+ *   - Hashes password with bcrypt before storage
+ *   - Creates user document in database with timestamps
+ *
+ * Deps:
+ *   - bcrypt for password hashing (12 rounds)
+ *   - lib/mongodb for database access
+ *
+ * References:
+ *   - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
+ *   - Auth.js (NextAuth): https://authjs.dev/getting-started/installation?framework=Next.js
+ *   - bcrypt: https://www.npmjs.com/package/bcrypt
+ *
+ * Notes:
+ *   - Email and username must be unique (case-insensitive, trimmed)
+ *   - Password hashed with bcrypt (12 rounds)
+ *   - Username used as default name if name not provided
+ *
+ * Contributions (Shawn):
+ *   - Implemented signup endpoint with credential validation and password hashing
+ */
+
 import { NextResponse } from "next/server";
 import { db } from "@/lib/mongodb";
 import bcrypt from "bcrypt";
 // bcrypt relies on Node
 export const runtime = "nodejs";
-
-/**
- * Signup (Credentials) — creates a user with email/username/password.
- *
- * Docs:
- * - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
- * - Auth.js (NextAuth): https://authjs.dev/getting-started/installation?framework=Next.js
- * - bcrypt: https://www.npmjs.com/package/bcrypt
- */
 
 export async function POST(req: Request) {
   try {

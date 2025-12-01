@@ -1,3 +1,26 @@
+/**
+ * Purpose:
+ *   Client-side social interaction utilities (likes, comments)
+ *
+ * Scope:
+ *   - Used by React components that handle likes and comments
+ *   - Provides client-side API wrappers for social features
+ *
+ * Role:
+ *   - Handles like/unlike actions for reviews and comments
+ *   - Fetches and posts comments with pagination support
+ *   - Manages authentication redirects for unauthorized requests
+ *
+ * Deps:
+ *   - /api/likes and /api/reviews/[id]/comments endpoints
+ *
+ * Notes:
+ *   - Automatically redirects to login on 401 responses
+ *   - Uses safe JSON parsing to handle malformed responses
+ *
+ * Contributions (Shawn):
+ *   - Implemented client-side social interaction utilities
+ */
 
 export type LikeAction = "like" | "unlike";
 
@@ -29,7 +52,6 @@ export type CommentItem = {
   parentId: string | null;
   body: string;
   likeCount: number;
-  replyCount: number;
   createdAt: string;
   user?: { id?: string; username?: string | null; name?: string | null; image?: string | null } | null;
   viewerLiked?: boolean;

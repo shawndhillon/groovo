@@ -1,3 +1,27 @@
+/**
+ * Purpose:
+ *   Interactive like button component for reviews and comments
+ *
+ * Scope:
+ *   - Used in review cards, comment sections, and detail pages
+ *   - Provides optimistic UI updates for like actions
+ *
+ * Role:
+ *   - Displays like count and current like status
+ *   - Handles like/unlike actions with optimistic updates
+ *   - Shows loading state during API calls (disabled when busy)
+ *   - Calls onChange callback when like status changes
+ *
+ * Deps:
+ *   - app/utils/social for toggleLike function
+ *
+ * Notes:
+ *   - Uses optimistic updates, reverts on failure
+ *   - Redirects to login on 401 response
+ *
+ * Contributions (Shawn):
+ *   - Implemented LikeButton component with optimistic updates
+ */
 
 "use client";
 

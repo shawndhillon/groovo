@@ -1,3 +1,32 @@
+/**
+ * Purpose:
+ *   API endpoint for fetching top albums by genre
+ *
+ * Scope:
+ *   - Used by home page genre selector feature
+ *   - Provides genre-based album discovery
+ *
+ * Role:
+ *   - Fetches top albums from Last.fm API for a given genre
+ *   - Enriches results with Spotify data when available (optional)
+ *   - Caches results to reduce API calls
+ *   - Handles pagination and result limits
+ *
+ * Deps:
+ *   - Last.fm API for genre-based album data
+ *   - Spotify API (optional) for enriched album information
+ *   - app/utils/lastfm for Last.fm integration and format conversion
+ *   - app/types/lastfm for type definitions
+ *
+ * Notes:
+ *   - Caches results with 1-hour TTL for default queries (page=1, limit=5 only)
+ *   - Spotify enrichment: Uses 24-hour cache for album lookups, 3-second timeout per search
+ *   - Falls back to Last.fm-only data if Spotify enrichment fails
+ *
+ * Contributions (Shawn):
+ *   - Implemented trending albums by genre endpoint with Last.fm and Spotify integration
+ */
+
 import type { LastFMAlbum, LastFMTopAlbumsResponse } from "@/app/types/lastfm";
 import {
   callLastFMAPI,
@@ -7,11 +36,6 @@ import {
 } from "@/app/utils/lastfm";
 import { errorResponse, notFoundResponse, serverErrorResponse } from "@/app/utils/response";
 import { NextResponse } from "next/server";
-// Documentation: https://www.last.fm/api/intro
-/**
- * GET /api/trending-albums-by-genre
- * Returns the top albums for a given genre using Last.fm API
- */
 
 // In memory cache for results
 interface CacheEntry {
@@ -38,7 +62,7 @@ async function getTopAlbumsFromLastFM(genre: string, limit: number = 5, page: nu
 
   // Filter out any invalid entries (must have name and artist)
   const validAlbums = albumArray.filter((album: LastFMAlbum) =>
-    album && album.name && (album.artist?.name || album.artist)
+    album && album.name && (typeof album.artist === "string" ? album.artist : album.artist?.name)
   );
 
   // Return valid albums (slice to ensure we don't exceed limit)

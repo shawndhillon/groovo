@@ -1,3 +1,26 @@
+/**
+ * Purpose:
+ *   Input validation schemas and ObjectId utilities
+ *
+ * Scope:
+ *   - Used by all API routes for request validation
+ *   - Provides type-safe validation with Zod schemas
+ *
+ * Role:
+ *   - Validates ObjectId format and converts strings to ObjectIds
+ *   - Defines Zod schemas for all API request bodies
+ *   - Ensures data integrity before database operations
+ *
+ * Deps:
+ *   - zod for schema validation
+ *   - mongodb for ObjectId type
+ *
+ * Notes:
+ *   - safeObjectId returns null for invalid IDs (non-throwing)
+ *   - validateObjectId throws error for invalid IDs
+ *   - All schemas include appropriate min/max constraints
+ */
+
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 
@@ -49,18 +72,9 @@ export const ReviewCreateSchema = z.object({
     .optional(),
 });
 
-export const ReviewEditSchema = z.object({
-  rating: ReviewCreateSchema.shape.rating.optional(),
-  body: z.string().trim().min(1).max(5000).optional(),
-});
-
 export const CommentCreateSchema = z.object({
   body: z.string().trim().min(1).max(4000),
   parentId: z.string().optional(), // for threaded replies
-});
-
-export const CommentEditSchema = z.object({
-  body: z.string().trim().min(1).max(4000),
 });
 
 export const LikeTargetSchema = z.object({

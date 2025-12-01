@@ -1,3 +1,25 @@
+/**
+ * Purpose:
+ *   Database index creation and management utilities
+ *
+ * Scope:
+ *   - Called by API routes to ensure indexes exist
+ *   - Runs once per application lifecycle
+ *
+ * Role:
+ *   - Creates indexes for optimal query performance
+ *   - Handles index conflicts and updates
+ *   - Ensures unique constraints are enforced
+ *
+ * Deps:
+ *   - lib/mongodb for database access
+ *
+ * Notes:
+ *   - Uses singleton pattern to run only once
+ *   - Handles existing indexes gracefully (checks structure before recreating)
+ *   - Creates indexes in background to avoid blocking operations
+ */
+
 import { db } from "@/lib/mongodb";
 
 let done = false;

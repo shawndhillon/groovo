@@ -1,3 +1,29 @@
+/**
+ * Purpose:
+ *   Album header component displaying album metadata and actions
+ *
+ * Scope:
+ *   - Used on album detail pages (/album/[id])
+ *   - Shows album cover, title, artist, and metadata
+ *
+ * Role:
+ *   - Displays album artwork, name, and artist information
+ *   - Shows release date, track count, and genres (first 3)
+ *   - Provides links to Spotify or Last.fm based on album source
+ *   - Includes back navigation button (router.back())
+ *
+ * Deps:
+ *   - app/utils/date for date formatting (formatAlbumDate)
+ *   - app/types/spotify for album type (SpotifyAlbumWithTracks)
+ *
+ * Notes:
+ *   - Detects Last.fm albums by ID format (contains "lastfm::") or lastfm property
+ *   - Shows appropriate play button based on album source (Last.fm or Spotify)
+ *
+ * Contributions (Shawn):
+ *   - Implemented AlbumHeader component with metadata display and external links
+ */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatAlbumDate } from "@/app/utils/date";

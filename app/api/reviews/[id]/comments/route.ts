@@ -1,3 +1,37 @@
+/**
+ * Purpose:
+ *   Comments API endpoint for a specific review
+ *
+ * Scope:
+ *   - Used by review detail pages to display and create comments
+ *   - Supports threaded replies with infinite nesting
+ *
+ * Role:
+ *   - POST: Creates new comments and threaded replies
+ *   - GET: Lists top-level comments with all nested replies recursively
+ *   - Includes author info and viewer like status for all comments
+ *   - Supports pagination for top-level comments
+ *
+ * Deps:
+ *   - lib/validation for input schemas (CommentCreateSchema, PageSchema) and ObjectId validation
+ *   - app/utils/users for batch fetching author information
+ *   - app/utils/likes for checking viewer like status
+ *   - lib/ensure-indexes for database indexes
+ *
+ * References:
+ *   - Next.js Dynamic Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
+ *   - Dynamic route params: https://nextjs.org/docs/messages/sync-dynamic-apis
+ *   - Input validation with Zod: https://zod.dev/
+ *   - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ *
+ * Notes:
+ *   - GET: Recursively fetches all nested replies for complete thread display
+ *   - Returns separate items (top-level) and replies (nested) arrays
+ *
+ * Contributions (Shawn):
+ *   - Implemented comments API endpoint with threaded replies and like status
+ */
+
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getLikedItemIds } from "@/app/utils/likes";
 import { errorResponse, notFoundResponse, unauthorizedResponse } from "@/app/utils/response";
@@ -7,17 +41,6 @@ import { db } from "@/lib/mongodb";
 import { CommentCreateSchema, PageSchema, validateObjectId } from "@/lib/validation";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-
-
-/**
- * Docs:
- * - Next.js Dynamic Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
- * - Dynamic route params: https://nextjs.org/docs/messages/sync-dynamic-apis
- * - Input validation with Zod: https://zod.dev/
- * - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
- */
-
-
 
 export const runtime = "nodejs";
 
@@ -56,19 +79,11 @@ export async function POST(req: Request, { params }: Ctx) {
     parentId: parentId ? String(parentId) : null,
     body: parsed.data.body,
     likeCount: 0,
-    replyCount: 0,
     createdAt: now,
-    updatedAt: now,
     deletedAt: null as Date | null,
   };
 
   const res = await database.collection("comments").insertOne(doc);
-
-  if (parentId) {
-    await database.collection("comments").updateOne({ _id: parentId }, { $inc: { replyCount: 1 } });
-  } else {
-    await database.collection("reviews").updateOne({ _id: reviewId }, { $inc: { commentCount: 1 } });
-  }
 
   return NextResponse.json({ id: String(res.insertedId) }, { status: 201 });
 }
