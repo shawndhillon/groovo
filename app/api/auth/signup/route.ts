@@ -26,8 +26,6 @@
  *   - Password hashed with bcrypt (12 rounds)
  *   - Username used as default name if name not provided
  *
- * Contributions (Shawn):
- *   - Implemented signup endpoint with credential validation and password hashing
  */
 
 import { NextResponse } from "next/server";

@@ -23,8 +23,6 @@
  *   - Spotify enrichment: Uses 24-hour cache for album lookups, 3-second timeout per search
  *   - Falls back to Last.fm-only data if Spotify enrichment fails
  *
- * Contributions (Shawn):
- *   - Implemented trending albums by genre endpoint with Last.fm and Spotify integration
  */
 
 import type { LastFMAlbum, LastFMTopAlbumsResponse } from "@/app/types/lastfm";

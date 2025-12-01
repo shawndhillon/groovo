@@ -1,30 +1,3 @@
-/**
- * Purpose:
- *   Public user profile page for viewing other users' profiles
- *
- * Scope:
- *   - Used for /profile/user/[id] route
- *   - Displays public profile information and reviews
- *
- * Role:
- *   - Fetches user profile data from /api/users/[id]
- *   - Displays user header with stats (reviews, followers, following)
- *   - Shows user's Top 5 favorite albums (editable if viewing own profile)
- *   - Renders user's reviews as an album grid
- *   - Handles loading and error states
- *
- * Deps:
- *   - useCurrentUser hook for current user context
- *   - useUserReviews hook for fetching user's reviews
- *   - UserHeader, SavedAlbumsGrid, TopFiveFavoritesView components
- *   - app/utils/albumsGrid for review-to-album mapping
- *
- * Notes:
- *   - Top 5 section is editable only when viewer.isSelf is true
- *
- * Contributions (Shawn):
- *   - Implemented public user profile page with reviews and Top 5 display
- */
 
 "use client";
 
@@ -40,6 +13,18 @@ import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 
 import type { SavedAlbum } from "@/app/utils/albumsGrid";
 import { mapReviewsToSavedAlbums } from "@/app/utils/albumsGrid";
+
+/**
+ * OtherUserProfilePage
+ *
+ * Public profile page for another user (or yourself via direct link).
+ * Responsibilities:
+ * - Resolve the target user ID from the route params
+ * - Fetch the public profile payload (/api/users/:id)
+ * - Fetch that user's reviews and display them as an album grid
+ * - Render Top 5 favorites (editable only if viewer.isSelf)
+ * - Show follow/share controls when viewing someone else
+ */
 
 type Params = { id: string };
 type PageProps = { params: Promise<Params> };

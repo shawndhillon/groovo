@@ -17,8 +17,6 @@
  *   - This file extends NextAuth's default types
  *   - user.id is added in the JWT callback in route handler
  *
- * Contributions (Shawn):
- *   - Extended NextAuth types to include user.id in session
  */
 
 import NextAuth from "next-auth";

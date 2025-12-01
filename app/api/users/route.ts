@@ -18,8 +18,6 @@
  *   - Escapes special regex characters in search query
  *   - Used by useSearchSuggestions hook for search dropdown
  *
- * Contributions (Shawn):
- *   - Implemented user search API endpoint
  */
 
 import { NextResponse } from "next/server";

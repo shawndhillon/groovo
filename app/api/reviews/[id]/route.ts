@@ -27,8 +27,6 @@
  * Notes:
  *   - Author and viewer like status included in single response to reduce client requests
  *
- * Contributions (Shawn):
- *   - Implemented review detail endpoint with author and viewer context
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

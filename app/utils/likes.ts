@@ -18,8 +18,6 @@
  *   - Returns empty Set if userId is null (unauthenticated users)
  *   - Only queries non-deleted items (deletedAt: null)
  *
- * Contributions (Shawn):
- *   - Implemented like status checking utilities
  */
 
 import { db } from "@/lib/mongodb";

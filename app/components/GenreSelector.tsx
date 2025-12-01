@@ -20,8 +20,6 @@
  *   - Uses local filtering for genre search (no server-side search endpoint)
  *   - Enter key: selects first match if multiple, submits query if no matches
  *
- * Contributions (Shawn):
- *   - Implemented GenreSelector component with search and categorization
  */
 
 "use client";

@@ -21,8 +21,6 @@
  *   - Client is reused across requests in development to prevent connection exhaustion
  *   - In production, Next.js handles connection pooling automatically
  *
- * Contributions (Shawn):
- *   - Implemented MongoDB connection utilities and client reuse pattern
  */
 
 import { MongoClient, Db } from "mongodb";

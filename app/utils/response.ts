@@ -18,8 +18,6 @@
  *   - All error responses include Cache-Control: no-store by default
  *   - NO_CACHE_HEADERS constant can be used for non-error responses
  *
- * Contributions (Shawn):
- *   - Implemented standardized response utilities and error helpers
  */
 
 import { NextResponse } from "next/server";

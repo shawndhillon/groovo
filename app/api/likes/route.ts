@@ -26,8 +26,6 @@
  * Notes:
  *   - Returns liked: true even if like already exists (idempotent operation)
  *
- * Contributions (Shawn):
- *   - Implemented likes API endpoint with atomic count updates
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

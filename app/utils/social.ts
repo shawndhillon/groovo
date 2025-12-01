@@ -18,8 +18,6 @@
  *   - Automatically redirects to login on 401 responses
  *   - Uses safe JSON parsing to handle malformed responses
  *
- * Contributions (Shawn):
- *   - Implemented client-side social interaction utilities
  */
 
 export type LikeAction = "like" | "unlike";

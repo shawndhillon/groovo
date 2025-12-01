@@ -21,8 +21,6 @@
  *   - Image conversion maps Last.fm size strings to pixel dimensions
  *   - Tag filtering removes user collections, cities, and other non-genre tags
  *
- * Contributions (Shawn):
- *   - Implemented Last.fm API integration and data transformation utilities
  */
 
 import type { LastFMImage } from "@/app/types/lastfm";

@@ -21,8 +21,6 @@
  *   - Returns 409 if follow already exists, but treats as success
  *   - Always returns no-cache headers for fresh follower counts
  *
- * Contributions (Shawn):
- *   - Implemented follows API endpoint with relationship management
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

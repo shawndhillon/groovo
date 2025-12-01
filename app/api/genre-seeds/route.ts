@@ -22,8 +22,6 @@
  *   - Returns curated popular genres even if Last.fm API fails
  *   - Filters tags by length (2-50 chars), format, and blacklist of invalid terms
  *
- * Contributions (Shawn):
- *   - Implemented genre seeds endpoint with Last.fm integration and caching
  */
 
 import type { LastFMTag, LastFMTopTagsResponse } from "@/app/types/lastfm";

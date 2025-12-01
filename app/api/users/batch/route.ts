@@ -19,8 +19,6 @@
  *   - Limits to 100 IDs per request (returns 400 if exceeded)
  *   - Used internally by other API routes, not directly by client components
  *
- * Contributions (Shawn):
- *   - Implemented batch user lookup API endpoint
  */
 
 import { errorResponse } from "@/app/utils/response";

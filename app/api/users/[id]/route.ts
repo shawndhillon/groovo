@@ -21,8 +21,6 @@
  *   - Always returns no-cache headers for fresh data
  *   - Viewer context only included when session exists
  *
- * Contributions (Shawn):
- *   - Implemented user profile API endpoint with stats and viewer context
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

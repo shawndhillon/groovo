@@ -18,8 +18,6 @@
  *   - Last.fm API can return single objects or arrays for many fields
  *   - Types reflect actual API structure from Last.fm documentation
  *
- * Contributions (Shawn):
- *   - Defined Last.fm API response types
  */
 
 export interface LastFMImage {

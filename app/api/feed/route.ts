@@ -22,8 +22,6 @@
  * Notes:
  *   - Includes own reviews so users see their own activity in feed
  *
- * Contributions (Shawn):
- *   - Implemented feed API endpoint with following-based filtering
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

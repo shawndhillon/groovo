@@ -28,8 +28,6 @@
  *   - GET: Recursively fetches all nested replies for complete thread display
  *   - Returns separate items (top-level) and replies (nested) arrays
  *
- * Contributions (Shawn):
- *   - Implemented comments API endpoint with threaded replies and like status
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

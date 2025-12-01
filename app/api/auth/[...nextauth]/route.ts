@@ -28,8 +28,6 @@
  *   - Uses allowDangerousEmailAccountLinking for Google OAuth to link accounts with same email
  *   - Google OAuth creates users with null username (needs to be set later)
  *
- * Contributions (Shawn):
- *   - Implemented NextAuth configuration with Credentials and Google OAuth providers
  */
 
 import NextAuth, { type NextAuthOptions } from "next-auth";

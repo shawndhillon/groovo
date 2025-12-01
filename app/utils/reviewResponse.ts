@@ -19,8 +19,6 @@
  *   - Always includes likeCount and commentCount with defaults
  *   - Author and viewerLiked are optional and only added when provided
  *
- * Contributions (Shawn):
- *   - Implemented review formatting utilities and response shape
  */
 
 import type { ReviewAuthor } from "@/app/types/reviews";

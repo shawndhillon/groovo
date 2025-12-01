@@ -30,8 +30,6 @@
  *   - GET: Use ?global=true to include author info and like status (requires auth)
  *   - albumSnapshot preserved in responses for client display
  *
- * Contributions (Shawn):
- *   - Implemented reviews API endpoint with creation, listing, and formatting
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";

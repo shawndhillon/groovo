@@ -18,8 +18,6 @@
  *   - Invalid ObjectIds are silently filtered out in batch operations
  *   - Returns null for missing users rather than throwing errors
  *
- * Contributions (Shawn):
- *   - Implemented user fetching utilities and batch operations
  */
 
 import { db } from "@/lib/mongodb";

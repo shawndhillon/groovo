@@ -1,32 +1,3 @@
-/**
- * Purpose:
- *   Album detail API endpoint for fetching album information and tracks
- *
- * Scope:
- *   - Used by album detail pages (/album/[id])
- *   - Supports both Spotify and Last.fm album IDs
- *
- * Role:
- *   - Fetches album data from Spotify API for Spotify album IDs
- *   - Fetches album data from Last.fm API for Last.fm IDs (format: lastfm::album::artist)
- *   - Returns complete album information including all tracks
- *   - Handles pagination for Spotify albums with more than 50 tracks
- *   - Converts Last.fm data to Spotify-compatible format for consistent client handling
- *
- * Deps:
- *   - Spotify API (spotify-web-api-node) for Spotify album data
- *   - Last.fm API for Last.fm album data
- *   - app/utils/lastfm for Last.fm integration and format conversion
- *   - app/types/spotify and app/types/lastfm for type definitions
- *
- * Notes:
- *   - Spotify albums: Paginates through tracks (Spotify limits to 50 tracks per request)
- *   - Last.fm track IDs are synthetic (lastfm-track-{index}) since Last.fm doesn't provide track IDs
- *   - Last.fm albums include lastfm property with url, playcount, and listeners
- *
- * Contributions (Shawn):
- *   - Implemented album detail endpoint with Spotify and Last.fm support
- */
 
 import type { LastFMAPIResponse, LastFMAlbum, LastFMTrack } from "@/app/types/lastfm";
 import type { SpotifyAlbumWithTracks, SpotifyTrack } from "@/app/types/spotify";

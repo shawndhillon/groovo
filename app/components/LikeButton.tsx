@@ -19,8 +19,6 @@
  *   - Uses optimistic updates, reverts on failure
  *   - Redirects to login on 401 response
  *
- * Contributions (Shawn):
- *   - Implemented LikeButton component with optimistic updates
  */
 
 "use client";
