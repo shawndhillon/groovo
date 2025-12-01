@@ -82,24 +82,6 @@ export async function ensureIndexes() {
     { key: { userId: 1, albumId: 1 }, name: "uniq_user_album", unique: true },
     { key: { userId: 1, savedAt: -1 }, name: "by_user_savedAt_desc" },
   ]);
-  // Handle follows indexes - check for old structure
-  try {
-    const existingIndexes = await database.collection("follows").indexes();
-    const uniqFollowIndex = existingIndexes.find((idx: any) => idx.name === "uniq_follow");
-    if (uniqFollowIndex) {
-      const keys = uniqFollowIndex.key;
-      // If it's the old structure (followingId instead of targetUserId), drop it
-      if (keys.followingId && !keys.targetUserId) {
-        try {
-          await database.collection("follows").dropIndex("uniq_follow");
-        } catch {
-          // Ignore if already dropped
-        }
-      }
-    }
-  } catch {
-    // Ignore errors checking indexes
-  }
 
   await safeCreateIndexes("follows", [
     { key: { followerId: 1, targetUserId: 1 }, name: "uniq_follow", unique: true },

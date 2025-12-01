@@ -68,6 +68,16 @@ export default function SearchBar() {
   const loading = loadingAlbums || loadingUsers;
 
   /**
+   * Automatically open dropdown when results arrive.
+   * This ensures the dropdown appears as soon as search results are available,
+   */
+  useEffect(() => {
+    if (hasAny && !loading) {
+      setOpen(true);
+    }
+  }, [hasAny, loading]);
+
+  /**
    * Global click handler: close dropdown when clicking outside
    * the SearchBar container.
    */

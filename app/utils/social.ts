@@ -11,6 +11,12 @@ export async function toggleLike(targetType: "review" | "comment", targetId: str
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ targetType, targetId, action }),
   });
+  
+  if (res.status === 401) {
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+  
   const body = await safeJson(res);
   if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
   return body as { liked: boolean };

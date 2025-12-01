@@ -4,10 +4,9 @@
  * Fetches from Last.fm's chart.getTopTags endpoint
  */
 
+import type { LastFMTag, LastFMTopTagsResponse } from "@/app/types/lastfm";
+import { callLastFMAPI, filterInvalidTags, normalizeLastFMArray } from "@/app/utils/lastfm";
 import { NextResponse } from "next/server";
-
-const LASTFM_API_BASE = "https://ws.audioscrobbler.com/2.0/";
-const LASTFM_API_KEY = process.env.LASTFM_API_KEY || "";
 
 // Default popular genres organized by category
 const POPULAR_GENRES_BY_CATEGORY = [
@@ -61,96 +60,57 @@ const POPULAR_GENRES_BY_CATEGORY = [
 const POPULAR_GENRES = POPULAR_GENRES_BY_CATEGORY.flatMap(cat => cat.genres).map(g => g.toLowerCase());
 
 
-// Filter out invalid tags that don't work with tag.getTopAlbums
-function filterInvalidTags(tags: string[]): string[] {
-  const invalidTags = new Set([
-    "albums i own", "albums-i-own", "my albums", "my-albums",
-    "favorites", "library", "collection",
-    "favorite", "favourite",
-    "albums", "music", "songs", "tracks", "artists", "bands",
-    "city", "cities",
-    "tv-soundtrack", "tv soundtrack", "movie-soundtrack", "movie soundtrack",
-    "all", "everything", "misc", "other", "unknown",
-  ]);
-
-  return tags.filter(tag => {
-    const lower = tag.toLowerCase().trim();
-    // Filter out invalid tags
-    if (invalidTags.has(lower)) return false;
-    // Filter out tags that are too short or too long
-    if (lower.length < 2 || lower.length > 50) return false;
-    // Filter out tags that are just numbers
-    if (/^\d+$/.test(lower)) return false;
-    return true;
-  });
-}
-
-// Fetch top tags from Last.fm API
 async function fetchLastFMTags(): Promise<string[]> {
-  if (!LASTFM_API_KEY) {
-    return [];
-  }
-
   try {
-    const params = new URLSearchParams({
-      method: "chart.getTopTags",
-      api_key: LASTFM_API_KEY,
-      format: "json",
-      limit: "1000",
-    });
+    const data = (await callLastFMAPI("chart.getTopTags", {
+      limit: "1000", // Fetch large number to get comprehensive genre list
+    })) as LastFMTopTagsResponse;
 
-    const response = await fetch(`${LASTFM_API_BASE}?${params.toString()}`);
-
-    if (!response.ok) {
-      return [];
-    }
-
-    const data = await response.json();
-
-    if (data.error) {
-      return [];
-    }
-
+    // Last.fm API can return single object or array - normalize to array
     const tags = data.tags?.tag || [];
-    const tagArray = Array.isArray(tags) ? tags : tags ? [tags] : [];
+    const tagArray = normalizeLastFMArray(tags);
 
-    // Extract tag names and normalize
+    // Extract tag names and normalize to lowercase
     const tagNames = tagArray
-      .map((tag: any) => tag?.name?.toLowerCase().trim())
+      .map((tag: LastFMTag) => tag?.name?.toLowerCase().trim())
       .filter((name: string): name is string => Boolean(name && name.length > 0));
 
     if (tagNames.length > 0) {
-      // Filter out invalid tags
+      // Filter out invalid tags (user collections, cities, etc.)
       const validTags = filterInvalidTags(tagNames);
       return validTags.sort();
     }
 
     return [];
   } catch (error) {
-    console.error("Error fetching Last.fm tags:", error);
+    console.error("Error fetching Last.fm tags:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return [];
   }
 }
 
-// Cache for tags
+// In-memory cache for genre tags (resets on server restart)
+// Cache TTL: 24 hours
 let cachedTags: string[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
 
 export async function GET() {
   try {
     const now = Date.now();
 
-    // Return cached tags
+    // Return cached tags if still valid
     if (cachedTags && (now - cacheTimestamp) < CACHE_TTL) {
-    return NextResponse.json({
-      genres: cachedTags,
-      popularGenres: POPULAR_GENRES,
-      popularGenresByCategory: POPULAR_GENRES_BY_CATEGORY
-    });
+      return NextResponse.json({
+        genres: cachedTags,
+        popularGenres: POPULAR_GENRES,
+        popularGenresByCategory: POPULAR_GENRES_BY_CATEGORY
+      });
     }
 
-    // Fetch fresh tags from Last.fm
+    // Fetch fresh tags from Last.fm API
     const tags = await fetchLastFMTags();
 
     // Update cache
@@ -163,7 +123,10 @@ export async function GET() {
       popularGenresByCategory: POPULAR_GENRES_BY_CATEGORY
     });
   } catch (error: any) {
-    console.error("Error fetching genre seeds:", error);
+    console.error("Error fetching genre seeds:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Return empty genres list but still include popular genres
     return NextResponse.json({
       genres: [],
       popularGenres: POPULAR_GENRES,

@@ -1,9 +1,10 @@
 
-import { NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { errorResponse, NO_CACHE_HEADERS, notFoundResponse } from "@/app/utils/response";
 import { db } from "@/lib/mongodb";
+import { safeObjectId } from "@/lib/validation";
+import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,27 +20,17 @@ export async function GET(_req: Request, { params }: Ctx) {
   const reviews = database.collection("reviews");
   const follows = database.collection("follows");
 
-
-  let _id: ObjectId;
-  try {
-    _id = new ObjectId(id);
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid user id" },
-      { status: 400, headers: { "Cache-Control": "no-store" } }
-    );
+  const _id = safeObjectId(id);
+  if (!_id) {
+    return errorResponse("Invalid user id", 400);
   }
-
 
   const user = await users.findOne(
     { _id },
     { projection: { _id: 1, username: 1, name: 1, image: 1, bio: 1, createdAt: 1 } }
   );
   if (!user) {
-    return NextResponse.json(
-      { error: "Not found" },
-      { status: 404, headers: { "Cache-Control": "no-store" } }
-    );
+    return notFoundResponse();
   }
 
   const [reviewsCount, followersCount, followingCount] = await Promise.all([
@@ -81,6 +72,6 @@ export async function GET(_req: Request, { params }: Ctx) {
         },
       },
     },
-    { headers: { "Cache-Control": "no-store" } }
+    { headers: NO_CACHE_HEADERS }
   );
 }

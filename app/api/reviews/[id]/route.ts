@@ -1,8 +1,11 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { isItemLiked } from "@/app/utils/likes";
+import { errorResponse, forbiddenResponse, notFoundResponse, unauthorizedResponse } from "@/app/utils/response";
+import { formatReview } from "@/app/utils/reviewResponse";
+import { fetchUserById } from "@/app/utils/users";
 import { ensureIndexes } from "@/lib/ensure-indexes";
 import { db } from "@/lib/mongodb";
-import { ReviewEditSchema } from "@/lib/validation";
-import { ObjectId } from "mongodb";
+import { ReviewEditSchema, safeObjectId, validateObjectId } from "@/lib/validation";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
@@ -27,85 +30,50 @@ export async function GET(_: Request, { params }: Ctx) {
   const database = await db();
 
   // Validate the identifier before querying MongoDB
-  let asObjectId: ObjectId | null = null;
-  try {
-    asObjectId = new ObjectId(id);
-  } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const asObjectId = safeObjectId(id);
+  if (!asObjectId) {
+    return notFoundResponse();
   }
 
   const review = await database.collection("reviews").findOne({
-  
     _id: asObjectId,
     deletedAt: null,
   });
-  if (!review) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!review) return notFoundResponse();
 
   const session = await getServerSession(authOptions);
 
   // Fetch author metadata so the client does not need a second request
-  let author: { id: string; username?: string | null; name?: string | null; image?: string | null } | null = null;
-  try {
-    const authorDoc = await database
-      .collection("users")
-      .findOne({ _id: new ObjectId(String(review.userId)) }, { projection: { _id: 1, username: 1, name: 1, image: 1 } });
-    if (authorDoc) {
-      author = {
-        id: String(authorDoc._id),
-        username: authorDoc.username ?? null,
-        name: authorDoc.name ?? null,
-        image: authorDoc.image ?? null,
-      };
-    }
-  } catch {
-    author = null;
-  }
+  const author = await fetchUserById(review.userId);
 
   // Determine if the current viewer has liked this review
-  let viewerLiked = false;
-  if (session?.user?.id) {
-    const liked = await database.collection("likes").findOne({
-      targetType: "review",
-      targetId: String(review._id),
-      userId: session.user.id,
-    });
-    viewerLiked = !!liked;
-  }
+  const viewerLiked = await isItemLiked(
+    session?.user?.id ?? null,
+    "review",
+    String(review._id)
+  );
 
   // Return a normalized document so clients receive author and viewer context in a single call
-  return NextResponse.json({
-    _id: String(review._id),
-    id: String(review._id),
-    userId: review.userId,
-    albumId: review.albumId,
-    rating: review.rating,
-    body: review.body,
-    likeCount: review.likeCount ?? 0,
-    commentCount: review.commentCount ?? 0,
-    createdAt: review.createdAt,
-    updatedAt: review.updatedAt,
-    albumSnapshot: review.albumSnapshot ?? null,
-    author,
-    viewerLiked,
-  });
+  return NextResponse.json(formatReview(review, author, viewerLiked));
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
   await ensureIndexes();
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return unauthorizedResponse();
 
   const parsed = ReviewEditSchema.safeParse(await req.json());
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });
+  if (!parsed.success) return errorResponse(parsed.error.message, 400);
 
   const { id } = await params;
   const database = await db();
+  const reviewId = validateObjectId(id, "Invalid review ID");
   const review = await database.collection("reviews").findOne({
-    _id: new ObjectId(id),
+    _id: reviewId,
     deletedAt: null,
   });
-  if (!review) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (review.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!review) return notFoundResponse();
+  if (review.userId !== session.user.id) return forbiddenResponse();
 
   const $set: any = { updatedAt: new Date() };
   if (parsed.data.body !== undefined) $set.body = parsed.data.body;
@@ -118,16 +86,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
 export async function DELETE(_: Request, { params }: Ctx) {
   await ensureIndexes();
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return unauthorizedResponse();
 
   const { id } = await params;
   const database = await db();
+  const reviewId = validateObjectId(id, "Invalid review ID");
   const review = await database.collection("reviews").findOne({
-    _id: new ObjectId(id),
+    _id: reviewId,
     deletedAt: null,
   });
-  if (!review) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (review.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!review) return notFoundResponse();
+  if (review.userId !== session.user.id) return forbiddenResponse();
 
   await database.collection("reviews").updateOne(
     { _id: review._id },

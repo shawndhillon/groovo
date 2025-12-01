@@ -1,6 +1,6 @@
+import { errorResponse } from "@/app/utils/response";
+import { fetchUsersByIds } from "@/app/utils/users";
 import { NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
-import { db } from "@/lib/mongodb";
 
 export const runtime = "nodejs";
 
@@ -11,30 +11,14 @@ export async function POST(req: Request) {
   const ids = Array.isArray(body?.ids) ? body!.ids.filter(Boolean) : [];
   if (!ids.length) return NextResponse.json({ items: [] });
 
-  const database = await db();
-  const objectIds = ids
-    .map((s) => {
-      try {
-        return new ObjectId(s);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean) as ObjectId[];
+  // Limit array size to prevent extremely large requests
+  if (ids.length > 100) {
+    return errorResponse("Maximum 100 user IDs allowed", 400);
+  }
 
-  if (!objectIds.length) return NextResponse.json({ items: [] });
-
-  const docs = await database
-    .collection("users")
-    .find({ _id: { $in: objectIds } }, { projection: { _id: 1, username: 1, name: 1, image: 1 } })
-    .toArray();
+  const userMap = await fetchUsersByIds(ids);
 
   return NextResponse.json({
-    items: docs.map((u) => ({
-      id: String(u._id),
-      username: u.username ?? null,
-      name: u.name ?? null,
-      image: u.image ?? null,
-    })),
+    items: Array.from(userMap.values()),
   });
 }
