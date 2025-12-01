@@ -1,38 +1,47 @@
+/**
+ * Purpose:
+ *   Sidebar card for the review details page that highlights the reviewer
+ *   and key stats for the current review.
+ *
+ * Scope:
+ *   - Used on /review/[id] alongside the main review content
+ *   - Pure UI component (no data fetching; minimal hook usage)
+ *
+ * Responsibilities:
+ *   - Display reviewer identity (initial, display name, handle)
+ *   - Link to the appropriate profile page (viewer vs other user)
+ *   - Show core review stats: rating, likes, comments, published date
+ *
+ * Deps:
+ *   - next/link
+ *   - types: ReviewResponse
+ *   - utils/reviewFormat:
+ *       • reviewerDisplayName
+ *       • reviewerHandle
+ *       • reviewerInitial
+ *       • reviewerProfileHref
+ *       • pluralize
+ *   - hooks: useCurrentUser (for viewer id, used by reviewerProfileHref)
+ *
+ * Notes:
+ *   - All review data is assumed to be normalized upstream
+ *     (e.g., dates formatted via useReviewDetails).
+ *   - To add actions (follow reviewer, message button, etc.),
+ *     extend this component’s props and UI only — the data model
+ *     should remain in hooks/utils.
+ */
+
 "use client";
 
-/**
- * ReviewerSidebar Component
- *
- * Purpose
- * -------
- * A compact sidebar card shown on the Review Details page. It displays:
- * - Reviewer identity (initial, display name, handle)
- * - Link to the reviewer’s profile
- * - Core review statistics (rating, likes, comments, published date)
- *
- * This component is strictly presentational. All data passed here is already
- * formatted and normalized by `useReviewDetails` and `reviewFormat.ts`.
- *
- * Use cases:
- * ----------
- * - Display alongside the main review content (desktop layout)
- * - Can be reused on other pages where a review’s author and stats should appear
- *
- * When to modify this file:
- * -------------------------
- * - If you add new review metadata that belongs in the sidebar
- * - If you want stylistic/layout changes
- * - If you want to add user actions (follow button, message button, etc.)
- */
 import Link from "next/link";
-import type { ReviewResponse } from "../../types/reviews";
+import type { ReviewResponse } from "@/app/types/reviews";
 import {
   reviewerDisplayName,
   reviewerHandle,
   reviewerInitial,
   reviewerProfileHref,
   pluralize,
-} from "../../utils/reviewFormat";
+} from "@/app/utils/reviewFormat";
 
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 
@@ -43,7 +52,7 @@ interface ReviewerSidebarProps {
   createdAt: string | null;
 }
 
-// Renders the reviewer information + key review stats in a sidebar card.
+// ReviewerSidebar
 export function ReviewerSidebar({
   review,
   likeCount,
@@ -51,7 +60,8 @@ export function ReviewerSidebar({
   createdAt,
 }: ReviewerSidebarProps) {
   const { user } = useCurrentUser();
-  // Decide where the profile link should go
+  
+  // Resolve profile link based on whether viewer owns this review
   const profileHref = reviewerProfileHref(review, user?._id);
   
   return (

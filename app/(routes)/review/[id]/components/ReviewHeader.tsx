@@ -1,32 +1,33 @@
+/**
+ * Purpose:
+ *   Presentational header for a single review, showing core metadata.
+ *
+ * Scope:
+ *   - Used on the Review Details page: /review/[id]
+ *   - Pure UI component (no data fetching, no side effects)
+ *
+ * Responsibilities:
+ *   - Display album title
+ *   - Render star rating + numeric rating
+ *   - Show formatted creation date (if provided)
+ *   - Show like + comment counts with pluralization
+ *   - Expose a Share button for the review URL
+ *
+ * Deps:
+ *   - utils/reviewFormat: ratingStars, pluralize
+ *   - components/ShareButton: generic share control
+ *
+ * Notes:
+ *   - `createdAt` is expected to be a preformatted date string
+ *     (formatting should be handled upstream, e.g. in useReviewDetails).
+ *   - Any additional review metadata (tags, edited timestamp, etc.)
+ *     should be added via props and rendered here.
+ */
+
 "use client";
 
-/**
- * ReviewHeader Component
- *
- * Purpose
- * -------
- * Displays the high-level meta information for a review:
- * - Album title
- * - Star rating + numeric rating
- * - Formatted creation date (if available)
- * - Like count and comment count
- *
- * This component is intended to be a simple *presentational* header used in the
- * Review Details page (`/review/[id]`).
- *
- * When to modify this file:
- * -------------------------
- * - If new review metadata is added (e.g., genres, tags, edit timestamp).
- * - If the visual layout needs adjustment for the header section.
- * - If additional contextual elements should appear near the title/rating.
- *
- * Not recommended:
- * ----------------
- * - Do NOT perform data fetching or side effects here.
- *   Keep all data handling in hooks like `useReviewDetails`.
- */
-import { ratingStars, pluralize } from "../../utils/reviewFormat";
-import ShareButton from "../ShareButton";
+import { ratingStars, pluralize } from "@/app/utils/reviewFormat";
+import ShareButton from "@/app/components/ShareButton";
 
 interface ReviewHeaderProps {
   reviewId: string;
@@ -37,7 +38,6 @@ interface ReviewHeaderProps {
   commentCount: number;
 }
 
-// Renders the review header section seen at the top of the review detail page.
 export function ReviewHeader({
   reviewId,
   albumName,

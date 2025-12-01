@@ -1,28 +1,28 @@
+/**
+ * Purpose:
+ *   Compact visual card that displays the album tied to a review.
+ *
+ * Scope:
+ *   - Used exclusively on the Review Details page: /review/[id]
+ *   - Pure presentational component (no fetching, no state)
+ *
+ * Responsibilities:
+ *   - Show album cover art
+ *   - Show album name + artists
+ *   - Provide optional link to `/album/[albumId]`
+ *
+ * Deps:
+ *   - next/link
+ *
+ * Notes:
+ *   - All data (cover, artists, name) must be prepared upstream
+ *     via useReviewDetails or parent component.
+ *   - If you add more album metadata (year, genres, label) it can
+ *     be added safely here without changing upstream logic.
+ */
+
 "use client";
 
-/**
- * AlbumSpotlight Component
- *
- * Purpose
- * -------
- * Displays a compact, visually focused card summarizing the album associated
- * with a review. It shows:
- * - Album cover art
- * - Album name
- * - List of artists
- * - Optional link to the album detail page (`/album/[albumId]`)
- *
- * This component is used on the Review Details page and is intended to stay
- * strictly presentational — it does not fetch data or manage state. All album
- * information should be prepared in the parent or in hooks like
- * `useReviewDetails`.
- *
- * When to modify this file:
- * -------------------------
- * - If you want to change the layout/design of the spotlight card
- * - If album metadata expands (e.g., release year, genres)
- * - If you want to add actions (save album, follow artist, etc.)
- */
 import Link from "next/link";
 
 interface AlbumSpotlightProps {
@@ -33,7 +33,7 @@ interface AlbumSpotlightProps {
 }
 
 /**
- * Renders the album summary card used within a review page.
+ * Album Spotlight
  */
 export function AlbumSpotlight({
   albumId,
@@ -45,6 +45,7 @@ export function AlbumSpotlight({
     <section className="space-y-4">
       <h2 className="text-lg font-semibold text-zinc-200">Album Spotlight</h2>
       <div className="flex flex-col gap-4 rounded-2xl border border-white/5 bg-black/30 p-4 sm:flex-row">
+        {/* Cover Art */}
         <div className="relative h-40 w-40 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-zinc-800">
           <img
             src={coverUrl}
@@ -54,12 +55,14 @@ export function AlbumSpotlight({
           />
         </div>
 
+        {/* Album Meta */}
         <div className="flex flex-1 flex-col justify-between gap-3">
           <div>
             <h3 className="text-2xl font-semibold text-white">{albumName}</h3>
             <p className="text-sm text-zinc-400">{albumArtists}</p>
           </div>
 
+          {/* CTA: Link to album page */}
           {albumId && (
             <Link
               href={`/album/${albumId}`}
