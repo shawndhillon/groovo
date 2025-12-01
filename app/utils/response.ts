@@ -1,9 +1,29 @@
+/**
+ * Purpose:
+ *   Standardized HTTP response helpers for API routes
+ *
+ * Scope:
+ *   - Used by all API route handlers for consistent error handling
+ *   - Provides common response patterns (errors, cache headers)
+ *
+ * Role:
+ *   - Creates consistent error response format across all endpoints
+ *   - Provides helpers for common HTTP status codes (401, 403, 404, 500)
+ *   - Exports cache control headers for dynamic responses
+ *
+ * Deps:
+ *   - Next.js NextResponse for response creation
+ *
+ * Notes:
+ *   - All error responses include Cache-Control: no-store by default
+ *   - NO_CACHE_HEADERS constant can be used for non-error responses
+ *
+ * Contributions (Shawn):
+ *   - Implemented standardized response utilities and error helpers
+ */
+
 import { NextResponse } from "next/server";
 
-/**
- * Standardized error response helper
- * Ensures consistent error format across all API routes
- */
 export function errorResponse(
   message: string,
   status: number = 400,

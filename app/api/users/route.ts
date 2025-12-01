@@ -1,3 +1,26 @@
+/**
+ * Purpose:
+ *   User search API endpoint
+ *
+ * Scope:
+ *   - Used by SearchBar component for user autocomplete suggestions
+ *   - Provides user lookup by username or name
+ *
+ * Role:
+ *   - Searches users by username or name with case-insensitive regex matching
+ *   - Returns limited results (default 5, max 10) for performance
+ *   - Projects only necessary fields (_id, username, name, image)
+ *
+ * Deps:
+ *   - lib/mongodb for database access
+ *
+ * Notes:
+ *   - Escapes special regex characters in search query
+ *   - Used by useSearchSuggestions hook for search dropdown
+ *
+ * Contributions (Shawn):
+ *   - Implemented user search API endpoint
+ */
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/mongodb";

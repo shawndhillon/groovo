@@ -1,3 +1,30 @@
+/**
+ * Purpose:
+ *   Last.fm API integration utilities and data transformation
+ *
+ * Scope:
+ *   - Used by API routes that fetch data from Last.fm
+ *   - Used for converting Last.fm data formats to Spotify-compatible shapes
+ *
+ * Role:
+ *   - Makes authenticated requests to Last.fm API
+ *   - Converts Last.fm image format to Spotify format
+ *   - Creates and parses Last.fm album IDs
+ *   - Filters invalid tags/genres from Last.fm responses
+ *
+ * Deps:
+ *   - LASTFM_API_KEY environment variable
+ *   - app/types/lastfm for type definitions
+ *
+ * Notes:
+ *   - Handles Last.fm API error codes (e.g., code 6 for invalid tags)
+ *   - Image conversion maps Last.fm size strings to pixel dimensions
+ *   - Tag filtering removes user collections, cities, and other non-genre tags
+ *
+ * Contributions (Shawn):
+ *   - Implemented Last.fm API integration and data transformation utilities
+ */
+
 import type { LastFMImage } from "@/app/types/lastfm";
 
 // Last.fm API constants

@@ -1,3 +1,29 @@
+/**
+ * Purpose:
+ *   User profile API endpoint
+ *
+ * Scope:
+ *   - Used by user profile pages (/profile/user/[id]) to fetch user data
+ *   - Returns public user information with stats and viewer context
+ *
+ * Role:
+ *   - Fetches user profile by ID with ObjectId validation
+ *   - Calculates review, follower, and following counts
+ *   - Includes viewer context (isSelf, youFollow) when authenticated
+ *   - Returns 404 for invalid or missing users
+ *
+ * Deps:
+ *   - lib/mongodb for database access
+ *   - lib/validation for ObjectId validation (safeObjectId)
+ *   - app/api/auth/[...nextauth] for session handling (getServerSession)
+ *
+ * Notes:
+ *   - Always returns no-cache headers for fresh data
+ *   - Viewer context only included when session exists
+ *
+ * Contributions (Shawn):
+ *   - Implemented user profile API endpoint with stats and viewer context
+ */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { errorResponse, NO_CACHE_HEADERS, notFoundResponse } from "@/app/utils/response";

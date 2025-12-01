@@ -1,9 +1,35 @@
+/**
+ * Purpose:
+ *   Follows API endpoint for user following relationships
+ *
+ * Scope:
+ *   - Used by FollowButton component for follow/unfollow actions
+ *   - Manages user-to-user following relationships
+ *
+ * Role:
+ *   - Creates and deletes follow relationships
+ *   - Returns current follower count in response
+ *   - Prevents self-following and duplicate follows
+ *
+ * Deps:
+ *   - lib/validation for input schema (FollowToggleSchema)
+ *   - lib/mongodb for database access
+ *   - lib/ensure-indexes for database indexes
+ *   - app/api/auth/[...nextauth] for session management
+ *
+ * Notes:
+ *   - Returns 409 if follow already exists, but treats as success
+ *   - Always returns no-cache headers for fresh follower counts
+ *
+ * Contributions (Shawn):
+ *   - Implemented follows API endpoint with relationship management
+ */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { errorResponse, NO_CACHE_HEADERS, serverErrorResponse, unauthorizedResponse } from "@/app/utils/response";
 import { ensureIndexes } from "@/lib/ensure-indexes";
 import { db } from "@/lib/mongodb";
-import { FollowToggleSchema, PageSchema } from "@/lib/validation";
+import { FollowToggleSchema } from "@/lib/validation";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
@@ -63,54 +89,4 @@ export async function POST(req: Request) {
     const followersCount = await follows.countDocuments({ targetUserId });
     return NextResponse.json({ following: false, followersCount }, { headers: NO_CACHE_HEADERS });
   }
-}
-
-/**
- * GET:
- * - /api/follows?followingOf=<userId>&page=&pageSize=   -> who <userId> follows
- * - /api/follows?followersOf=<userId>&page=&pageSize=   -> who follows <userId>
- *   defaults to followingOf = session.user.id if both omitted
- */
-export async function GET(req: Request) {
-  await ensureIndexes();
-  const url = new URL(req.url);
-  const followingOf = url.searchParams.get("followingOf");
-  const followersOf = url.searchParams.get("followersOf");
-
-  const page = PageSchema.parse({
-    page: url.searchParams.get("page") ?? undefined,
-    pageSize: url.searchParams.get("pageSize") ?? undefined,
-  });
-
-  const database = await db();
-  const follows = database.collection("follows");
-
-  if (followersOf) {
-    const items = await follows
-      .find({ targetUserId: followersOf })
-      .sort({ createdAt: -1 })
-      .skip((page.page - 1) * page.pageSize)
-      .limit(page.pageSize)
-      .toArray();
-
-    return NextResponse.json({ items }, { headers: NO_CACHE_HEADERS });
-  }
-
-  let who = followingOf;
-  if (!who) {
-    const session = await getServerSession(authOptions);
-    if (session?.user?.id) who = session.user.id;
-  }
-  if (!who) {
-    return errorResponse("Missing userId", 400);
-  }
-
-  const items = await follows
-    .find({ followerId: who })
-    .sort({ createdAt: -1 })
-    .skip((page.page - 1) * page.pageSize)
-    .limit(page.pageSize)
-    .toArray();
-
-  return NextResponse.json({ items }, { headers: NO_CACHE_HEADERS });
 }

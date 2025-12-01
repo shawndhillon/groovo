@@ -1,8 +1,25 @@
 /**
- * Last.fm API Response Types
+ * Purpose:
+ *   TypeScript type definitions for Last.fm API responses
  *
- * These types match the actual Last.fm API response structure.
- * Reference: https://www.last.fm/api/show/album.getInfo
+ * Scope:
+ *   - Used by Last.fm API integration code
+ *   - Ensures type safety when working with Last.fm data
+ *
+ * Role:
+ *   - Defines interfaces matching Last.fm API response structure
+ *   - Handles Last.fm's flexible array/single-object patterns
+ *   - Includes error response types for API failures
+ *
+ * Deps:
+ *   - None (pure type definitions)
+ *
+ * Notes:
+ *   - Last.fm API can return single objects or arrays for many fields
+ *   - Types reflect actual API structure from Last.fm documentation
+ *
+ * Contributions (Shawn):
+ *   - Defined Last.fm API response types
  */
 
 export interface LastFMImage {

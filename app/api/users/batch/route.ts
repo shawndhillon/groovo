@@ -1,3 +1,28 @@
+/**
+ * Purpose:
+ *   Batch user lookup API endpoint
+ *
+ * Scope:
+ *   - Used by API routes that need multiple user profiles at once
+ *   - Efficient alternative to multiple individual user requests
+ *
+ * Role:
+ *   - Accepts array of user IDs in POST body and returns user information
+ *   - Validates and limits request size (max 100 IDs per request)
+ *   - Returns empty array if no valid IDs provided
+ *
+ * Deps:
+ *   - app/utils/users for batch fetching (fetchUsersByIds)
+ *   - app/utils/response for error handling (errorResponse)
+ *
+ * Notes:
+ *   - Limits to 100 IDs per request (returns 400 if exceeded)
+ *   - Used internally by other API routes, not directly by client components
+ *
+ * Contributions (Shawn):
+ *   - Implemented batch user lookup API endpoint
+ */
+
 import { errorResponse } from "@/app/utils/response";
 import { fetchUsersByIds } from "@/app/utils/users";
 import { NextResponse } from "next/server";

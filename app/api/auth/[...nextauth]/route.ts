@@ -1,3 +1,37 @@
+/**
+ * Purpose:
+ *   NextAuth authentication configuration and route handler
+ *
+ * Scope:
+ *   - Handles all /api/auth/* requests (sign in, sign out, callbacks, session)
+ *   - Used by all protected API routes for session management via getServerSession
+ *
+ * Role:
+ *   - Configures Credentials and Google OAuth providers
+ *   - Manages JWT sessions with user ID stored in token
+ *   - Handles account linking for Google OAuth (allows linking to existing email accounts)
+ *   - Creates users automatically for new Google sign-ins
+ *   - Validates credentials against bcrypt-hashed passwords
+ *
+ * Deps:
+ *   - MongoDBAdapter for account storage
+ *   - bcrypt for password verification
+ *   - lib/mongodb for database access
+ *
+ * References:
+ *   - Auth.js (NextAuth): https://authjs.dev/reference/nextjs
+ *   - Providers: https://authjs.dev/reference/core/providers
+ *   - Credentials flow: https://authjs.dev/getting-started/providers/credentials
+ *   - MongoDB adapter: https://authjs.dev/reference/adapter/mongodb
+ *
+ * Notes:
+ *   - Uses allowDangerousEmailAccountLinking for Google OAuth to link accounts with same email
+ *   - Google OAuth creates users with null username (needs to be set later)
+ *
+ * Contributions (Shawn):
+ *   - Implemented NextAuth configuration with Credentials and Google OAuth providers
+ */
+
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
@@ -7,17 +41,6 @@ import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 // bcrypt relies on Node
 export const runtime = "nodejs";
-
-
-/**
- * Auth.js (NextAuth) route — Credentials + Google, JWT sessions, MongoDBAdapter
- * Docs:
- * - Auth.js (NextAuth): https://authjs.dev/reference/nextjs
- * - Providers: https://authjs.dev/reference/core/providers
- * - Credentials flow (auth): https://authjs.dev/getting-started/providers/credentials
- * - MongoDB adapter: https://authjs.dev/reference/adapter/mongodb
- */
-
 
 /**
  * Exported so other API routes can call:

@@ -1,3 +1,27 @@
+/**
+ * Purpose:
+ *   Interactive follow/unfollow button component
+ *
+ * Scope:
+ *   - Used on user profile pages
+ *   - Provides follow action with follower count updates
+ *
+ * Role:
+ *   - Displays current follow status (Following/Follow)
+ *   - Handles follow/unfollow actions with optimistic updates
+ *   - Shows loading state during API calls (disabled when busy)
+ *   - Redirects to login on unauthorized requests (401)
+ *   - Calls onChange callback with updated follow status and count
+ *
+ * Deps:
+ *   - /api/follows endpoint for follow actions
+ *
+ * Notes:
+ *   - Uses optimistic updates, reverts on failure
+ *
+ * Contributions (Shawn):
+ *   - Implemented FollowButton component with optimistic updates
+ */
 
 "use client";
 

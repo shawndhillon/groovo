@@ -1,3 +1,35 @@
+/**
+ * Purpose:
+ *   Likes API endpoint for toggling likes on reviews and comments
+ *
+ * Scope:
+ *   - Used by LikeButton component for like/unlike actions
+ *   - Supports both reviews and comments as targets
+ *
+ * Role:
+ *   - Creates or deletes like records based on action (like/unlike)
+ *   - Updates likeCount on target items atomically using $inc
+ *   - Validates target exists and is not deleted before allowing like
+ *   - Prevents duplicate likes with unique index (returns success if already liked)
+ *
+ * Deps:
+ *   - lib/validation for input schema (LikeTargetSchema)
+ *   - lib/mongodb for database access
+ *   - lib/ensure-indexes for database indexes
+ *   - app/api/auth/[...nextauth] for session management
+ *
+ * References:
+ *   - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
+ *   - getServerSession in Route Handlers: https://authjs.dev/reference/nextjs#server-components--route-handlers
+ *   - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ *
+ * Notes:
+ *   - Returns liked: true even if like already exists (idempotent operation)
+ *
+ * Contributions (Shawn):
+ *   - Implemented likes API endpoint with atomic count updates
+ */
+
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { unauthorizedResponse } from "@/app/utils/response";
 import { ensureIndexes } from "@/lib/ensure-indexes";
@@ -6,15 +38,6 @@ import { LikeTargetSchema } from "@/lib/validation";
 import { ObjectId } from "mongodb";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-
-/**
- * Docs:
- * - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
- * - getServerSession in Route Handlers: https://authjs.dev/reference/nextjs#server-components--route-handlers
- * - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
- */
-
-
 
 export const runtime = "nodejs";
 

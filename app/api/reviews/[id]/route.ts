@@ -1,24 +1,46 @@
+/**
+ * Purpose:
+ *   Individual review API endpoint for fetching review details
+ *
+ * Scope:
+ *   - Used by review detail pages (/review/[id])
+ *   - Provides complete review information with author and viewer context
+ *
+ * Role:
+ *   - Fetches single review by ID with validation
+ *   - Includes author information (username, name, image)
+ *   - Includes viewer like status (whether current user liked the review)
+ *   - Returns formatted review response for client display
+ *
+ * Deps:
+ *   - app/utils/reviewResponse for formatting review data
+ *   - app/utils/users for fetching author information
+ *   - app/utils/likes for checking viewer like status
+ *   - lib/validation for ObjectId validation
+ *   - lib/ensure-indexes for database indexes
+ *
+ * References:
+ *   - Next.js Dynamic Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
+ *   - Route params: https://nextjs.org/docs/messages/sync-dynamic-apis
+ *   - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ *
+ * Notes:
+ *   - Author and viewer like status included in single response to reduce client requests
+ *
+ * Contributions (Shawn):
+ *   - Implemented review detail endpoint with author and viewer context
+ */
+
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { isItemLiked } from "@/app/utils/likes";
-import { errorResponse, forbiddenResponse, notFoundResponse, unauthorizedResponse } from "@/app/utils/response";
+import { notFoundResponse } from "@/app/utils/response";
 import { formatReview } from "@/app/utils/reviewResponse";
 import { fetchUserById } from "@/app/utils/users";
 import { ensureIndexes } from "@/lib/ensure-indexes";
 import { db } from "@/lib/mongodb";
-import { ReviewEditSchema, safeObjectId, validateObjectId } from "@/lib/validation";
+import { safeObjectId } from "@/lib/validation";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-
-
-/**
- * Docs:
- * - Next.js Dynamic Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
- * - Route params: https://nextjs.org/docs/messages/sync-dynamic-apis
- * - getServerSession in Route Handlers: https://authjs.dev/reference/nextjs#server-components--route-handlers
- * - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
- */
-
-
 
 export const runtime = "nodejs";
 
@@ -55,52 +77,4 @@ export async function GET(_: Request, { params }: Ctx) {
 
   // Return a normalized document so clients receive author and viewer context in a single call
   return NextResponse.json(formatReview(review, author, viewerLiked));
-}
-
-export async function PATCH(req: Request, { params }: Ctx) {
-  await ensureIndexes();
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return unauthorizedResponse();
-
-  const parsed = ReviewEditSchema.safeParse(await req.json());
-  if (!parsed.success) return errorResponse(parsed.error.message, 400);
-
-  const { id } = await params;
-  const database = await db();
-  const reviewId = validateObjectId(id, "Invalid review ID");
-  const review = await database.collection("reviews").findOne({
-    _id: reviewId,
-    deletedAt: null,
-  });
-  if (!review) return notFoundResponse();
-  if (review.userId !== session.user.id) return forbiddenResponse();
-
-  const $set: any = { updatedAt: new Date() };
-  if (parsed.data.body !== undefined) $set.body = parsed.data.body;
-  if (parsed.data.rating !== undefined) $set.rating = parsed.data.rating;
-
-  await database.collection("reviews").updateOne({ _id: review._id }, { $set });
-  return NextResponse.json({ ok: true });
-}
-
-export async function DELETE(_: Request, { params }: Ctx) {
-  await ensureIndexes();
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return unauthorizedResponse();
-
-  const { id } = await params;
-  const database = await db();
-  const reviewId = validateObjectId(id, "Invalid review ID");
-  const review = await database.collection("reviews").findOne({
-    _id: reviewId,
-    deletedAt: null,
-  });
-  if (!review) return notFoundResponse();
-  if (review.userId !== session.user.id) return forbiddenResponse();
-
-  await database.collection("reviews").updateOne(
-    { _id: review._id },
-    { $set: { deletedAt: new Date() } }
-  );
-  return NextResponse.json({ ok: true });
 }

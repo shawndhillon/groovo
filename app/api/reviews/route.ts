@@ -1,3 +1,39 @@
+/**
+ * Purpose:
+ *   Reviews API endpoint for creating and listing reviews
+ *
+ * Scope:
+ *   - Used by review creation forms and review listing pages
+ *   - Supports both global feed and filtered views
+ *
+ * Role:
+ *   - POST: Creates new reviews with validation and duplicate prevention
+ *   - GET: Lists reviews with filtering by albumId or userId
+ *   - Formats reviews with author info and like status for global feed mode
+ *   - Handles pagination for large result sets
+ *
+ * Deps:
+ *   - lib/validation for input schemas (ReviewCreateSchema, PageSchema)
+ *   - app/utils/reviewResponse for formatting review data
+ *   - app/utils/users for batch fetching author information
+ *   - app/utils/likes for checking viewer like status
+ *   - lib/ensure-indexes for database indexes
+ *   - app/api/auth/[...nextauth] for session management
+ *
+ * References:
+ *   - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
+ *   - Input validation with Zod: https://zod.dev/
+ *   - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ *
+ * Notes:
+ *   - POST: Returns 409 if user already reviewed the album
+ *   - GET: Use ?global=true to include author info and like status (requires auth)
+ *   - albumSnapshot preserved in responses for client display
+ *
+ * Contributions (Shawn):
+ *   - Implemented reviews API endpoint with creation, listing, and formatting
+ */
+
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getLikedItemIds } from "@/app/utils/likes";
 import { errorResponse, serverErrorResponse, unauthorizedResponse } from "@/app/utils/response";
@@ -8,14 +44,6 @@ import { db } from "@/lib/mongodb";
 import { PageSchema, ReviewCreateSchema } from "@/lib/validation";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-
-/**
- * Docs:
- * - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
- * - Input validation with Zod: https://zod.dev/
- * - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
- * - createIndexes: https://www.mongodb.com/docs/drivers/node/current/indexes/
- */
 
 export const runtime = "nodejs";
 
@@ -41,7 +69,6 @@ export async function POST(req: Request) {
       likeCount: 0,
       commentCount: 0,
       createdAt: now,
-      updatedAt: now,
       deletedAt: null as Date | null,
     };
     const res = await database.collection("reviews").insertOne(doc);

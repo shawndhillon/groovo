@@ -1,3 +1,29 @@
+/**
+ * Purpose:
+ *   Modal dialog for selecting music genres
+ *
+ * Scope:
+ *   - Used on home page for genre-based album discovery
+ *   - Provides search and category browsing for genres
+ *
+ * Role:
+ *   - Fetches and displays available genres from /api/genre-seeds
+ *   - Provides search functionality with debouncing (300ms delay)
+ *   - Shows popular genres organized by category when no search query
+ *   - Allows setting albums per page preference (1-50)
+ *   - Supports keyboard navigation (Enter to select first match or submit query)
+ *
+ * Deps:
+ *   - /api/genre-seeds for genre list (genres, popularGenres, popularGenresByCategory)
+ *
+ * Notes:
+ *   - Uses local filtering for genre search (no server-side search endpoint)
+ *   - Enter key: selects first match if multiple, submits query if no matches
+ *
+ * Contributions (Shawn):
+ *   - Implemented GenreSelector component with search and categorization
+ */
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -91,28 +117,15 @@ export default function GenreSelector({ onClose, onSelect, currentGenre, albumsP
     }
 
     setIsSearching(true);
-    fetch(`/api/genre-search?q=${encodeURIComponent(query)}`)
-      .then((res) => {
-        if (!res.ok) {
-          return { genres: [] };
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data.genres)) {
-          setSearchResults(data.genres);
-        } else {
-          setSearchResults([]);
-        }
-      })
-      .catch((err) => {
-        console.error("Error searching genres:", err);
-        setSearchResults([]);
-      })
-      .finally(() => {
-        setIsSearching(false);
-      });
-  }, [debouncedSearchQuery]);
+    // Note: /api/genre-search endpoint doesn't exist; using local filtering instead
+    const queryLower = query.toLowerCase();
+    const matches = allAvailableGenres.filter((g) =>
+      g.toLowerCase().includes(queryLower) ||
+      g.toLowerCase().startsWith(queryLower)
+    );
+    setSearchResults(matches.slice(0, 50));
+    setIsSearching(false);
+  }, [debouncedSearchQuery, allAvailableGenres]);
 
   const filteredGenres = useMemo(() => {
     if (!searchQuery.trim()) {
