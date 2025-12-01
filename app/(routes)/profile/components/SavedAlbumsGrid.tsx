@@ -1,9 +1,38 @@
+/**
+ * Purpose:
+ *   Reusable album grid component for profile pages and other views.
+ *
+ * Scope:
+ *   - Used in:
+ *       - Profile "My Library" section
+ *       - Profile "My Reviews" section
+ *       - Top Favorites read-only view
+ *   - Renders SavedAlbum tiles with optional rating + review snippet
+ *
+ * Role:
+ *   - Handle loading / error / empty states for album collections
+ *   - Display albums in a responsive grid layout
+ *   - Provide optional CTA hooks (retry, discover) to parent components
+ *   - Allow callers to inject a per-album action (e.g. "Add to Top 5" button)
+ *
+ * Deps:
+ *   - next/navigation: useRouter for default "Discover" CTA
+ *   - next/link: Link for navigation to album detail page
+ *   - app/utils/albumCollections: SavedAlbum type
+ *
+ * Notes:
+ *   - This component is intentionally dumb about where the data comes from;
+ *     it expects albums already normalized to SavedAlbum.
+ *   - Empty state copy is driven by the `emptyAs` variant ("saved" | "reviews")
+ *     so we can reuse the grid in multiple contexts.
+ */
+
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ReactNode } from "react";
-import type { SavedAlbum } from "@/app/utils/albumsGrid";
+import type { SavedAlbum } from "@/app/utils/albumCollections";
 /**
  * Empty state variants help us reuse the grid for different contexts
  * without hardcoding copy. Extend as needed (e.g., "likes", "history").
@@ -12,14 +41,15 @@ type EmptyVariant = "saved" | "reviews";
 
 /**
  * Props:
- *  - albums     : Data to render (already mapped to SavedAlbum[])
- *  - loading    : Skeleton while waiting
- *  - error      : Server/network error message
- *  - emptyAs    : Controls the empty state copy (default: "saved")
- *  - showRating : Whether to render the rating badge (default: true)
- *  - showSnippet: Whether to render the review snippet (default: true)
- *  - onRetry    : Optional retry handler (otherwise we reload the page)
- *  - onDiscover : Optional handler for CTA (defaults to /discover)
+ *  - albums      : Data to render (already mapped to SavedAlbum[])
+ *  - loading     : Show skeleton grid instead of content
+ *  - error       : Error message from parent (network / server)
+ *  - emptyAs     : Controls empty-state copy ("saved" | "reviews")
+ *  - showRating  : Whether to render the rating badge on tiles
+ *  - showSnippet : Whether to render review snippet under title
+ *  - onRetry     : Optional retry handler (defaults to window.location.reload)
+ *  - onDiscover  : Optional "Discover" CTA handler (defaults to /discover)
+ *  - renderAction: Optional per-album action row (e.g., Add to Top 5 button)
  */
 export interface SavedAlbumsGridProps {
   albums: SavedAlbum[];
@@ -46,10 +76,7 @@ export default function SavedAlbumsGrid({
 }: SavedAlbumsGridProps) {
   const router = useRouter();
 
-  /**
-   * 1) Loading: simple skeleton grid.
-   *    Keep count small so it feels snappy; grid is responsive via Tailwind.
-   */
+  // 1) Loading state
   if (loading) {
     return (
       <div
@@ -70,9 +97,7 @@ export default function SavedAlbumsGrid({
     );
   }
 
-  /**
-   * 2) Error: present a retry button (call parent handler if provided, otherwise reload).
-   */
+  // 2) Error: present a retry button (call parent handler if provided, otherwise reload).
   if (error) {
     return (
       <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-6 text-center">
@@ -88,10 +113,8 @@ export default function SavedAlbumsGrid({
     );
   }
 
-  /**
-   * 3) Empty: adjust copy depending on context ("saved" vs "reviews").
-   *    Provide a CTA—either parent-supplied click handler or default to /discover.
-   */
+  
+  // 3) Empty: adjust copy depending on context ("saved" vs "reviews").
   if (albums.length === 0) {
     const title =
       emptyAs === "reviews" ? "No reviews yet" : "No saved albums yet";
@@ -117,12 +140,7 @@ export default function SavedAlbumsGrid({
     );
   }
 
-  /**
-   * 4) Grid of items: each tile links to the album detail page.
-   *    - Rating badge is optional (showRating)
-   *    - Review snippet is optional (showSnippet)
-   *    - We use a simple <img> for reliability; swap to next/image if desired.
-   */
+  // 4) Grid of albums
   return (
     <div
       className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"

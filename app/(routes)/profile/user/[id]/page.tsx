@@ -38,8 +38,8 @@ import TopFiveFavoritesView from "@/app/(routes)/profile/components/TopFiveFavor
 import { useUserReviews } from "@/app/hooks/useUserReviews";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 
-import type { SavedAlbum } from "@/app/utils/albumsGrid";
-import { mapReviewsToSavedAlbums } from "@/app/utils/albumsGrid";
+import type { SavedAlbum } from "@/app/utils/albumCollections";
+import { mapReviewsToSavedAlbums } from "@/app/utils/albumCollections";
 
 type Params = { id: string };
 type PageProps = { params: Promise<Params> };
