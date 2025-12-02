@@ -134,7 +134,7 @@ export function reviewerInitial(review: ReviewResponse | null): string {
  *
  * Behavior:
  *   - If the review belongs to the current user, returns "/profile"
- *   - Otherwise returns "/profile/[id]" based on:
+ *   - Otherwise returns "/profile/user/[id]" based on:
  *       • author.id (preferred)
  *       • review.userId
  *   - Fallback: "/profile"
@@ -150,7 +150,7 @@ export function reviewerProfileHref(
     currentUserId && (currentUserId === authorId || currentUserId === review?.userId);
 
   if (isCurrentUsersReview) return "/profile";
-  if (ownerId) return `/profile/${ownerId}`;
+  if (ownerId) return `/profile/user/${ownerId}`;
   return "/profile";
 }
 
