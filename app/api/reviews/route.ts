@@ -1,37 +1,26 @@
 /**
  * Purpose:
- *   Reviews API endpoint for creating and listing reviews
+ *   Main reviews API for creating reviews and listing them across the app
  *
  * Scope:
- *   - Used by review creation forms and review listing pages
- *   - Supports both global feed and filtered views
+ *   - Review creation flows and album detail pages
+ *   - Global and filtered review listings (by album, by user, or in feeds)
  *
  * Role:
- *   - POST: Creates new reviews with validation and duplicate prevention
- *   - GET: Lists reviews with filtering by albumId or userId
- *   - Formats reviews with author info and like status for global feed mode
- *   - Handles pagination for large result sets
+ *   - Expose HTTP handlers for adding new reviews
+ *   - Provide listing endpoints that can filter reviews and paginate results
+ *   - Use shared helpers for formatting reviews and attaching context
  *
  * Deps:
- *   - lib/validation for input schemas (ReviewCreateSchema, PageSchema)
- *   - app/utils/reviewResponse for formatting review data
- *   - app/utils/users for batch fetching author information
- *   - app/utils/likes for checking viewer like status
- *   - lib/ensure-indexes for database indexes
- *   - app/api/auth/[...nextauth] for session management
- *
- * References:
- *   - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
- *   - Input validation with Zod: https://zod.dev/
- *   - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ *   - MongoDB via lib/mongodb and lib/ensure-indexes
+ *   - Validation helpers and schemas from lib/validation
+ *   - Shared review, user, and like utilities for response shaping and viewer context
+ *   - NextAuth via authOptions and getServerSession for authenticated operations
  *
  * Notes:
- *   - POST: Returns 409 if user already reviewed the album
- *   - GET: Use ?global=true to include author info and like status (requires auth)
- *   - albumSnapshot preserved in responses for client display
+ *   - Assumes a valid session from NextAuth
+ *   - Response shapes are kept consistent with other review endpoints
  *
- * Contributions (Shawn):
- *   - Implemented reviews API endpoint with creation, listing, and formatting
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -47,11 +36,29 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+/**
+ * Purpose:
+ *   Create a new review for an album
+ *
+ * Params:
+ *   - req: Next.js request object with JSON body (albumId, rating, body, optional album snapshot)
+ *
+ * Returns:
+ *   - JSON response with id string of the newly created review (status 201)
+ *
+ * Notes:
+ *   - returns 401 response when there is no active session
+ *   - returns 409 response if user already reviewed the album
+ *   - albumSnapshot preserved in response for client display
+ */
 export async function POST(req: Request) {
+  // step 1: call ensureIndexes from lib/ensure-indexes so review writes use the expected MongoDB indexes
   await ensureIndexes();
+  // step 2: require an authenticated user via getServerSession using authOptions from the NextAuth route
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return unauthorizedResponse();
 
+  // step 3: validate the incoming review payload with ReviewCreateSchema from lib/validation
   const parsed = ReviewCreateSchema.safeParse(await req.json());
   if (!parsed.success) return errorResponse(parsed.error.message, 400);
 
@@ -60,6 +67,7 @@ export async function POST(req: Request) {
   const now = new Date();
 
   try {
+    // step 4: insert the new review document with optional albumSnapshot for display on album pages
     const doc = {
       userId: session.user.id,
       albumId,
@@ -75,6 +83,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: String(res.insertedId) }, { status: 201 });
   } catch (e: any) {
     if (e?.code === 11000) {
+      // return 409 when a user has already created a review for this album
       return errorResponse("You already reviewed this album.", 409);
     }
     console.error("Error creating review:", e);
@@ -82,6 +91,21 @@ export async function POST(req: Request) {
   }
 }
 
+/**
+ * Purpose:
+ *   List reviews with optional filtering by albumId or userId
+ *
+ * Params:
+ *   - req: Next.js request object with query parameters: albumId (optional), userId (optional), global (optional boolean), page (optional), pageSize (optional)
+ *
+ * Returns:
+ *   - JSON response with items array of review objects
+ *
+ * Notes:
+ *   - user may or may not be signed in
+ *   - use ?global=true to include author info and like status (requires auth for like status)
+ *   - supports pagination with page and pageSize parameters
+ */
 export async function GET(req: Request) {
   await ensureIndexes();
   const url = new URL(req.url);
@@ -106,7 +130,7 @@ export async function GET(req: Request) {
     .limit(page.pageSize)
     .toArray();
 
-  // Always explicitly map items to ensure proper serialization, especially albumSnapshot
+  // map items into plain objects so fields like albumSnapshot serialize correctly in JSON
   const mappedItems = items.map((r) => ({
     _id: String(r._id),
     id: String(r._id),
@@ -127,10 +151,10 @@ export async function GET(req: Request) {
     const viewerId = session?.user?.id ?? null;
     const uniqueUserIds = Array.from(new Set(items.map((r) => r.userId).filter(Boolean)));
 
-    // Batch fetch author information
+    // fetchUsersByIds from app/utils/users loads author info for all user ids in one query
     const userMap = await fetchUsersByIds(uniqueUserIds);
 
-    // Check which reviews the user has liked
+    // getLikedItemIds from app/utils/likes returns the set of review ids liked by the current viewer
     const reviewIds = items.map((r) => String(r._id));
     const likedReviewIds = await getLikedItemIds(viewerId, "review", reviewIds);
 

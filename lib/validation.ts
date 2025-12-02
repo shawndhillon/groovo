@@ -1,25 +1,3 @@
-/**
- * Purpose:
- *   Input validation schemas and ObjectId utilities
- *
- * Scope:
- *   - Used by all API routes for request validation
- *   - Provides type-safe validation with Zod schemas
- *
- * Role:
- *   - Validates ObjectId format and converts strings to ObjectIds
- *   - Defines Zod schemas for all API request bodies
- *   - Ensures data integrity before database operations
- *
- * Deps:
- *   - zod for schema validation
- *   - mongodb for ObjectId type
- *
- * Notes:
- *   - safeObjectId returns null for invalid IDs (non-throwing)
- *   - validateObjectId throws error for invalid IDs
- *   - All schemas include appropriate min/max constraints
- */
 
 import { ObjectId } from "mongodb";
 import { z } from "zod";

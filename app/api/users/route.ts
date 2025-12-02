@@ -1,25 +1,22 @@
 /**
  * Purpose:
- *   User search API endpoint
+ *   Search API for finding users by name or username
  *
  * Scope:
- *   - Used by SearchBar component for user autocomplete suggestions
- *   - Provides user lookup by username or name
+ *   - Global search shows partial matched users as you type
+ *   - Components user lookups by text query
  *
  * Role:
- *   - Searches users by username or name with case-insensitive regex matching
- *   - Returns limited results (default 5, max 10) for performance
- *   - Projects only necessary fields (_id, username, name, image)
+ *   - Expose a GET endpoint that returns mini user summaries for a query
+ *   - Limit and shape results
  *
  * Deps:
- *   - lib/mongodb for database access
+ *   - MongoDB via lib/mongodb for user lookups
  *
  * Notes:
- *   - Escapes special regex characters in search query
- *   - Used by useSearchSuggestions hook for search dropdown
+ *   - Designed for autocomplete style usage
+ *   - Queries are run as a regex
  *
- * Contributions (Shawn):
- *   - Implemented user search API endpoint
  */
 
 import { NextResponse } from "next/server";
@@ -27,7 +24,22 @@ import { db } from "@/lib/mongodb";
 
 export const runtime = "nodejs";
 
-
+/**
+ * Purpose:
+ *   Search for users by username or name with case insensitive matching
+ *
+ * Params:
+ *   - req: Next.js request object with query parameter "q" (search term) (optional limit (max 10))
+ *
+ * Returns:
+ *   - JSON response with items array of user objects (id, username, name, image)
+ *
+ * Notes:
+ *   - assumes user may or may not be signed in
+ *   - used by useSearchSuggestions hook for search dropdown
+ *   - removes special regex chars in search query
+ *   - returns empty array if no search query provided
+ */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") || "").trim();
@@ -41,6 +53,7 @@ export async function GET(req: Request) {
   const database = await db();
   const users = database.collection("users");
 
+  // escape regex chars in q so the search term is safe to use in a case insensitive RegExp
   const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 
   const docs = await users

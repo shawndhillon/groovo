@@ -1,25 +1,23 @@
 /**
  * Purpose:
- *   User data fetching and formatting utilities
+ *   Shared helpers for looking up and formatting user data
  *
  * Scope:
- *   - Used by API routes that need user information (reviews, comments, profiles)
- *   - Used by components that display user data
+ *   - API routes that need author or profile information for reviews, comments, and follows
+ *   - Server side logic that needs a consistent user shape for responses
  *
  * Role:
- *   - Batch fetches user data by IDs for efficient queries
- *   - Formats MongoDB user documents into consistent UserInfo shape
- *   - Handles ObjectId conversion and validation
+ *   - Provide UserInfo shape used across the app
+ *   - Batch fetch user documents by ID
+ *   - Small helpers for converting and formatting user identifiers
  *
  * Deps:
- *   - lib/mongodb for database access
+ *   - MongoDB via lib/mongodb
  *
  * Notes:
- *   - Invalid ObjectIds are silently filtered out in batch operations
- *   - Returns null for missing users rather than throwing errors
+ *   - Intended for server side code and API routes rather than client components
+ *   - Fallbacks (nulls and empty maps) instead of throwing when users are missing
  *
- * Contributions (Shawn):
- *   - Implemented user fetching utilities and batch operations
  */
 
 import { db } from "@/lib/mongodb";
@@ -32,6 +30,17 @@ type UserDocument = WithId<Document> & {
   image?: string | null;
 };
 
+/**
+ * Purpose:
+ *   User information shape used throughout the app
+ *
+ * Returns:
+ *   - Type definition for user data with id, username, name, and image fields
+ *
+ * Notes:
+ *   - Used by API routes and components that display user info
+ *   - All fields except id can be null
+ */
 export type UserInfo = {
   id: string;
   username: string | null;
@@ -39,20 +48,47 @@ export type UserInfo = {
   image: string | null;
 };
 
-
+/**
+ * Purpose:
+ *   Convert array of string IDs to MongoDB ObjectIds, filtering out invalid ones
+ *
+ * Params:
+ *   - ids: array of string IDs to convert
+ *
+ * Returns:
+ *   - array of valid ObjectIds (invalid strings are skipped)
+ *
+ * Notes:
+ *   - Used internally by fetchUsersByIds to prepare query parameters
+ *   - Invalid ObjectIds are caught and excluded from the result
+ */
 export function stringIdsToObjectIds(ids: string[]): ObjectId[] {
   const objectIds: ObjectId[] = [];
   for (const id of ids) {
     try {
       objectIds.push(new ObjectId(id));
     } catch {
-
+      // ignore invalid ObjectId strings so they are skipped from the batch query
     }
   }
   return objectIds;
 }
 
-
+/**
+ * Purpose:
+ *   Batch fetch user information for multiple user IDs in a single database query
+ *
+ * Params:
+ *   - userIds: array of user ID strings to fetch
+ *
+ * Returns:
+ *   - Map from user ID string to UserInfo object
+ *
+ * Notes:
+ *   - Returns empty Map if no valid IDs provided
+ *   - Only fetches _id, username, name, and image fields for efficiency
+ *   - Used by API routes that need author info for multiple reviews or comments
+ */
 export async function fetchUsersByIds(
   userIds: string[]
 ): Promise<Map<string, UserInfo>> {
@@ -84,13 +120,40 @@ export async function fetchUsersByIds(
   return userMap;
 }
 
-
+/**
+ * Purpose:
+ *   Fetch user info for a single user ID
+ *
+ * Params:
+ *   - userId: user ID string to fetch
+ *
+ * Returns:
+ *   - UserInfo object if found, null if user does not exist
+ *
+ * Notes:
+ *   - Wrapper around fetchUsersByIds for single user lookups
+ *   - Used by API routes that need author info for a single review
+ */
 export async function fetchUserById(userId: string): Promise<UserInfo | null> {
   const map = await fetchUsersByIds([userId]);
   return map.get(userId) ?? null;
 }
 
-
+/**
+ * Purpose:
+ *   Convert MongoDB user document to UserInfo shape
+ *
+ * Params:
+ *   - user: MongoDB user document with _id, username, name, and image fields
+ *
+ * Returns:
+ *   - UserInfo object with id as string and null handling
+ *
+ * Notes:
+ *   - Converts _id ObjectId to string
+ *   - Handles undefined fields converting to null
+ *   - Used internally by fetchUsersByIds to format query results
+ */
 export function formatUserInfo(user: UserDocument): UserInfo {
   return {
     id: String(user._id),
@@ -100,7 +163,22 @@ export function formatUserInfo(user: UserDocument): UserInfo {
   };
 }
 
-
+/**
+ * Purpose:
+ *   Format author info from a user ID and user map lookup
+ *
+ * Params:
+ *   - userId: user ID string to format
+ *   - userMap: Map from user ID to UserInfo (from fetchUsersByIds)
+ *
+ * Returns:
+ *   - Author object with id, username, name, and image fields
+ *
+ * Notes:
+ *   - Returns userId as id even if user not found in map
+ *   - Used by review formatting utilities to attach author info
+ *   - Falls back to null for username, name, and image if user not in map
+ */
 export function formatAuthor(
   userId: string,
   userMap: Map<string, UserInfo>

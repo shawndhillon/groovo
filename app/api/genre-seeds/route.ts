@@ -1,29 +1,24 @@
 /**
  * Purpose:
- *   Genre seeds API endpoint for music genre discovery
+ *   Genre seeds API that powers genre selection and discovery in the app
  *
  * Scope:
- *   - Used by GenreSelector component to populate genre lists
- *   - Provides both comprehensive genre list and popular genres
+ *   - GenreSelector and other UIs that need a list of genres to choose from
+ *   - Discovery flows that suggest popular or curated genres
  *
  * Role:
- *   - Fetches genre tags from Last.fm API (chart.getTopTags)
- *   - Filters out invalid tags (user collections, cities, etc.)
- *   - Returns popular genres organized by category
- *   - Caches results to reduce API calls
+ *   - Fetch tag data from Last.fm and turn it into a clean genre list
+ *   - Provide both a comprehensive list and curated popular genres by category
+ *   - Cache results to keep the endpoint fast and reduce external calls
  *
  * Deps:
- *   - Last.fm API for genre tag data
- *   - app/utils/lastfm for API calls (callLastFMAPI) and tag filtering (filterInvalidTags, normalizeLastFMArray)
- *   - app/types/lastfm for type definitions
+ *   - Last.fm API for tag data
+ *   - Last.fm utilities and types from app/utils/lastfm and app/types/lastfm
  *
  * Notes:
- *   - Uses in-memory cache with 24-hour TTL (resets on server restart)
- *   - Returns curated popular genres even if Last.fm API fails
- *   - Filters tags by length (2-50 chars), format, and blacklist of invalid terms
+ *   - Uses an in memory cache with a 24-hour TTL that resets on server restart
+ *   - Falls back to curated popular genres even when the API fails
  *
- * Contributions (Shawn):
- *   - Implemented genre seeds endpoint with Last.fm integration and caching
  */
 
 import type { LastFMTag, LastFMTopTagsResponse } from "@/app/types/lastfm";
@@ -118,7 +113,22 @@ let cachedTags: string[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
-
+/**
+ * Purpose:
+ *   Fetch available music genres from Last.fm with popular genres by category
+ *
+ * Params:
+ *   - none
+ *
+ * Returns:
+ *   - JSON response with genres array (all available), popularGenres array, and popularGenresByCategory array
+ *
+ * Notes:
+ *   - uses in memory cache with 24-hour TTL (resets on server restart)
+ *   - returns curated popular genres even if Last.fm API fails
+ *   - filters tags by length, format, and blacklist
+ *   - used by the GenreSelector component
+ */
 export async function GET() {
   try {
     const now = Date.now();

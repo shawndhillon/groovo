@@ -1,27 +1,3 @@
-/**
- * Purpose:
- *   Home page component with feed and genre-based album discovery
- *
- * Scope:
- *   - Main landing page for authenticated and unauthenticated users
- *   - Combines feed, top albums, and genre selector features
- *
- * Role:
- *   - Displays user feed (following or global mode)
- *   - Shows top albums by genre with pagination
- *   - Provides genre selector modal for discovery
- *   - Handles feed mode switching (following vs global)
- *
- * Deps:
- *   - useFeed hook for feed data and state
- *   - GenreSelector component for genre selection
- *   - FeedReviewCard and TopAlbumsSection components
- *
- * Notes:
- *   - Feed requires authentication (shows login prompt if not logged in)
- *   - Genre albums are fetched when genre is selected
- *   - Supports pagination and albums-per-page customization
- */
 
 "use client";
 

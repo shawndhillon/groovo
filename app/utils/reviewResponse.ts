@@ -1,33 +1,44 @@
 /**
  * Purpose:
- *   Server-side review formatting utilities for API responses
+ *   Shared server side utilities for shaping review data in API responses
  *
  * Scope:
- *   - Used by review API routes to format responses
- *   - Ensures consistent review shape across endpoints
+ *   - Review related API routes that need a consistent response shape
+ *   - Server side features that attach author and viewer context to reviews
  *
  * Role:
- *   - Formats MongoDB review documents into ServerReviewResponse shape
- *   - Attaches author information and viewer like status
- *   - Handles optional fields and null values consistently
+ *   - Define types for review documents and response payloads
+ *   - Map MongoDB review records into a normalized structure
+ *   - Optionally enrich reviews with author metadata and viewer like status
  *
  * Deps:
- *   - app/types/reviews for ReviewAuthor type
- *   - app/utils/users for UserInfo type
+ *   - Review types from app/types/reviews
+ *   - User helpers and types from app/utils/users
  *
  * Notes:
- *   - Always includes likeCount and commentCount with defaults
- *   - Author and viewerLiked are optional and only added when provided
+ *   - Shared by multiple review endpoints so clients see a stable review shape
+ *   - Keeps formatting logic out of individual route handlers
  *
- * Contributions (Shawn):
- *   - Implemented review formatting utilities and response shape
  */
 
 import type { ReviewAuthor } from "@/app/types/reviews";
 import type { Document, WithId } from "mongodb";
 import type { UserInfo } from "./users";
 
-
+/**
+ * Purpose:
+ *   MongoDB review document shape with all review fields
+ *
+ * Params:
+ *   - none
+ *
+ * Returns:
+ *   - Type definition for review documents stored in MongoDB
+ *
+ * Notes:
+ *   - Used internally by formatReview to type review input
+ *   - Includes optional likeCount and commentCount with defaults applied during formatting
+ */
 export type ReviewDocument = WithId<Document> & {
   userId: string;
   albumId: string;
@@ -41,7 +52,19 @@ export type ReviewDocument = WithId<Document> & {
   deletedAt?: Date | null;
 };
 
-
+/**
+ * Purpose:
+ *   Formatted review response shape for API endpoints
+ *
+ * Params:
+ *   - none
+ *
+ * Returns:
+ *   - Type definition for review data with author and viewer context
+ *
+ * Notes:
+ *   - Includes optional author and viewerLiked fields when available
+ */
 export type ServerReviewResponse = {
   _id: string;
   id: string;
@@ -58,7 +81,22 @@ export type ServerReviewResponse = {
   viewerLiked?: boolean;
 };
 
-
+/**
+ * Purpose:
+ *   Format MongoDB review document into ServerReviewResponse shape with author and like status
+ *
+ * Params:
+ *   - review: MongoDB review document to format
+ *   - author: optional UserInfo for the review author
+ *   - viewerLiked: optional bool indicating if current user liked the review
+ *
+ * Returns:
+ *   - ServerReviewResponse object ready for API response
+ *
+ * Notes:
+ *   - Always includes likeCount and commentCount with defaults
+ *   - Author and viewerLiked are only added when provided
+ */
 export function formatReview(
   review: ReviewDocument | WithId<Document>,
   author?: UserInfo | null,
