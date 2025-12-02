@@ -1,3 +1,36 @@
+/**
+ * Purpose:
+ *   Client-side hook for loading, organizing, and posting comments on a review.
+ *
+ * Scope:
+ *   - Used on album review pages to display comments and threaded replies.
+ *   - Fetches top-level comments + replies from `/utils/social` files.
+ *   - Handles posting new top-level comments 
+ *
+ * Role:
+ *   - Loads comment threads for a given `reviewId` using `fetchComments()`.
+ *   - Separates top-level comments from replies.
+ *   - Groups replies by their parent comment.
+ *   - Provides an API for posting new comments (`addTopLevel` → `postComment`).
+ *
+ * Deps:
+ *   - `fetchComments` and `postComment` from `@/app/utils/social`.
+ *   - React hooks (`useState`, `useCallback`, `useMemo`).
+ *
+ * Notes:
+ *   - `repliesByParent` is memoized for efficient nested rendering.
+ *   - On posting a comment, the hook re-loads comments to stay in sync.
+ *
+ * Returns:
+ *   {
+ *     items: CommentItem[]        // top-level comments
+ *     replies: CommentItem[]      // all replies
+ *     repliesByParent: Map        // replies that are grouped by parentId
+ *     loading: boolean
+ *     error: string | null
+ *   }
+ */
+
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
