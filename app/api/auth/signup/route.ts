@@ -1,31 +1,26 @@
 /**
  * Purpose:
- *   User signup API endpoint for credential-based registration
+ *   User signup API for creating accounts
  *
  * Scope:
- *   - Used by signup page for new user registration
- *   - Creates accounts with email, username, and password
+ *   - Signup page to register new users
+ *   - Backend logic that provisions basic user records before profile editing
  *
  * Role:
- *   - Validates email, username, and password requirements
- *   - Checks for existing email or username conflicts (returns 409 if exists)
- *   - Hashes password with bcrypt before storage
- *   - Creates user document in database with timestamps
+ *   - Validate simple credential requirements for new users
+ *   - Check for conflicts on email and username before inserting records
+ *   - Create initial user documents with hashed passwords and timestamps
  *
  * Deps:
- *   - bcrypt for password hashing (12 rounds)
- *   - lib/mongodb for database access
- *
- * References:
- *   - Next.js Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
- *   - Auth.js (NextAuth): https://authjs.dev/getting-started/installation?framework=Next.js
- *   - bcrypt: https://www.npmjs.com/package/bcrypt
+ *   - MongoDB via lib/mongodb for user storage
+ *   - bcrypt for password hashing
  *
  * Notes:
  *   - Email and username must be unique (case-insensitive, trimmed)
- *   - Password hashed with bcrypt (12 rounds)
  *   - Username used as default name if name not provided
- *
+ *   - returns 400 response if email, username, or password is invalid (password must be at least 8 characters)
+ *   - returns 409 response if email or username already exists
+ *   - password hashed with bcrypt before storage
  */
 
 import { NextResponse } from "next/server";
@@ -36,18 +31,18 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    // Expected payload 4 signup
+    // read the expected signup payload with email, username, and password
     const body = (await req.json().catch(() => null)) as {
       email?: string;
       username?: string;
       password?: string;
     } | null;
-    // normalize
+    // normalize email and username to lowercase and trim whitespace
     const email = String(body?.email ?? "").toLowerCase().trim();
     const username = String(body?.username ?? "").toLowerCase().trim();
     const password = String(body?.password ?? "");
 
-    // temp check we should use zod
+    // basic length and null check before hitting the database
     if (!email || !username || password.length < 8) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }

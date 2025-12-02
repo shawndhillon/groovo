@@ -1,25 +1,18 @@
 /**
  * Purpose:
- *   Modal dialog for selecting music genres
+ *   Modal UI for picking a music genre used in discovery features
  *
  * Scope:
  *   - Used on home page for genre-based album discovery
  *   - Provides search and category browsing for genres
  *
  * Role:
- *   - Fetches and displays available genres from /api/genre-seeds
- *   - Provides search functionality with debouncing (300ms delay)
- *   - Shows popular genres organized by category when no search query
- *   - Allows setting albums per page preference (1-50)
- *   - Supports keyboard navigation (Enter to select first match or submit query)
+ *   - Fetch and show the genre list from the server
+ *   - Let users search, browse, and select genres in overlay/popup
+ *   - Allow callers to adjust albums-per-page preferences alongside genre choice
  *
  * Deps:
- *   - /api/genre-seeds for genre list (genres, popularGenres, popularGenresByCategory)
- *
- * Notes:
- *   - Uses local filtering for genre search (no server-side search endpoint)
- *   - Enter key: selects first match if multiple, submits query if no matches
- *
+ *   - /api/genre-seeds for genres and curated popular genre groups
  */
 
 "use client";
@@ -56,6 +49,27 @@ interface GenreCategory {
   genres: string[];
 }
 
+/**
+ * Purpose:
+ *   Modal component for selecting music genres with search and category browsing
+ *
+ * Params:
+ *   - onClose: callback to close the modal
+ *   - onSelect: callback called when user selects a genre with the selected genre string
+ *   - currentGenre: optional currently selected genre to highlight
+ *   - albumsPerPage: number of albums to show per page (default 25)
+ *   - onAlbumsPerPageChange: optional callback when albums per page preference changes
+ *
+ * Returns:
+ *   - React element that renders a full screen modal with genre selection UI
+ *
+ * Notes:
+ *   - reads selectedGenres from props and calls onChange with a new list when the user changes the selection
+ *   - fetches genre list from /api/genre-seeds on mount
+ *   - uses local filtering for genre search (no server-side search endpoint)
+ *   - shows popular genres organized by category when no search query
+ *   - Enter key selects first match if multiple results, or submits query if no matches
+ */
 export default function GenreSelector({ onClose, onSelect, currentGenre, albumsPerPage = 25, onAlbumsPerPageChange }: GenreSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [allAvailableGenres, setAllAvailableGenres] = useState<string[]>([]);
@@ -180,7 +194,6 @@ export default function GenreSelector({ onClose, onSelect, currentGenre, albumsP
             </p>
           </div>
 
-          {/* Search Input and Albums Per Page */}
           <div className="mb-6 flex gap-3">
             <div className="flex-1 relative">
               <input

@@ -1,25 +1,24 @@
 /**
  * Purpose:
- *   User profile API endpoint
+ *   Profile API (GET) endpoint for fetching public user information and stats
  *
  * Scope:
- *   - Used by user profile pages (/profile/user/[id]) to fetch user data
- *   - Returns public user information with stats and viewer context
+ *   - Profile pages and profile panels that show user bios and activity counts
+ *   - Features that need to know if the viewer follows a given user
  *
  * Role:
- *   - Fetches user profile by ID with ObjectId validation
- *   - Calculates review, follower, and following counts
- *   - Includes viewer context (isSelf, youFollow) when authenticated
- *   - Returns 404 for invalid or missing users
+ *   - Read a single user's profile data and stats
+ *   - Attach viewer context such as: whether you follow this user or are viewing yourself
+ *   - Handle basic ID validation and not found behavior
  *
  * Deps:
- *   - lib/mongodb for database access
- *   - lib/validation for ObjectId validation (safeObjectId)
- *   - app/api/auth/[...nextauth] for session handling (getServerSession)
+ *   - MongoDB via lib/mongodb for users, reviews, and follows collections
+ *   - Validation helpers from lib/validation for safe ObjectId handling
+ *   - NextAuth via authOptions and getServerSession for viewer identity
  *
  * Notes:
- *   - Always returns no-cache headers for fresh data
- *   - Viewer context only included when session exists
+ *   - Always returns no cache headers so profile and stats stay fresh
+ *   - Viewer context fields are populated when a session is present
  *
  */
 
@@ -36,14 +35,33 @@ export const revalidate = 0;
 
 type Ctx = { params: Promise<{ id: string }> };
 
+/**
+ * Purpose:
+ *   Fetch user profile information with stats and viewer context
+ *
+ * Params:
+ *   - _req: Next.js request object (unused)
+ *   - params: route parameters with id string (user ID)
+ *
+ * Returns:
+ *   - JSON response with user object including stats and viewer context
+ *
+ * Notes:
+ *   - assumes user may or may not be signed in
+ *   - returns 404 response if user ID is invalid or user does not exist
+ *   - viewer context (isSelf, youFollow) only included when session exists
+ *   - always returns no cache headers for fresh data
+ */
 export async function GET(_req: Request, { params }: Ctx) {
   const { id } = await params;
 
+  // step 1: get MongoDB collections for users, reviews, and follows using db from lib/mongodb
   const database = await db();
   const users = database.collection("users");
   const reviews = database.collection("reviews");
   const follows = database.collection("follows");
 
+  // step 2: convert the user id from params into a safe ObjectId using safeObjectId from lib/validation
   const _id = safeObjectId(id);
   if (!_id) {
     return errorResponse("Invalid user id", 400);
@@ -57,17 +75,20 @@ export async function GET(_req: Request, { params }: Ctx) {
     return notFoundResponse();
   }
 
+  // step 3: compute review and follow counts in parallel so profile stats load with a single trip
   const [reviewsCount, followersCount, followingCount] = await Promise.all([
     reviews.countDocuments({ userId: String(_id), deletedAt: null }),
     follows.countDocuments({ targetUserId: String(_id) }),
     follows.countDocuments({ followerId: String(_id) }),
   ]);
 
+  // step 4: read viewer session with getServerSession from next-auth so we can attach viewer context fields
   const session = await getServerSession(authOptions);
   const viewerId = session?.user?.id ?? null;
 
   let youFollow = false;
   if (viewerId && viewerId !== String(_id)) {
+    // skip follow lookup when viewing your own profile to avoid extra follows query
     const rel = await follows.findOne({
       followerId: viewerId,
       targetUserId: String(_id),
@@ -75,6 +96,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     youFollow = !!rel;
   }
 
+  // step 5: build profile payload with stats and viewer context for profile pages and profile panels
   return NextResponse.json(
     {
       user: {

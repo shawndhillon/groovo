@@ -1,32 +1,24 @@
 /**
  * Purpose:
- *   NextAuth authentication configuration and route handler
+ *   Central NextAuth configuration and route handler
  *
  * Scope:
- *   - Handles all /api/auth/* requests (sign in, sign out, callbacks, session)
- *   - Used by all protected API routes for session management via getServerSession
+ *   - All /api/auth/* requests for sign in, sign out, callbacks, and session info
+ *   - Every protected API route and server component that relies on getServerSession
  *
  * Role:
- *   - Configures Credentials and Google OAuth providers
- *   - Manages JWT sessions with user ID stored in token
- *   - Handles account linking for Google OAuth (allows linking to existing email accounts)
- *   - Creates users automatically for new Google sign-ins
- *   - Validates credentials against bcrypt-hashed passwords
+ *   - Configure credential based and Google OAuth sign in
+ *   - Manage JWT session tokens and ensure user IDs are available on the session
+ *   - Handle Google account linking and automatic user creation for new sign ins
+ *   - Verify password-based logins against bcrypt hashed credentials
  *
  * Deps:
- *   - MongoDBAdapter for account storage
+ *   - MongoDBAdapter and MongoDB client for users and accounts
  *   - bcrypt for password verification
- *   - lib/mongodb for database access
- *
- * References:
- *   - Auth.js (NextAuth): https://authjs.dev/reference/nextjs
- *   - Providers: https://authjs.dev/reference/core/providers
- *   - Credentials flow: https://authjs.dev/getting-started/providers/credentials
- *   - MongoDB adapter: https://authjs.dev/reference/adapter/mongodb
+ *   - Auth.js providers for Google and credentials based auth
  *
  * Notes:
- *   - Uses allowDangerousEmailAccountLinking for Google OAuth to link accounts with same email
- *   - Google OAuth creates users with null username (needs to be set later)
+ *   - allowDangerousEmailAccountLinking is enabled to link Google accounts with the same email
  *
  */
 
@@ -102,7 +94,7 @@ export const authOptions: NextAuthOptions = {
           const result = await users.insertOne({
             email: user.email,
             name: user.name ?? null,
-            username: null, // We need to set or atleast allow users to set (maybe auto generate as most web apps do with oauth)
+            username: null, // username starts as null for Google users
             image: user.image ?? null,
             bio: null,
             createdAt: new Date(),
@@ -162,7 +154,7 @@ export const authOptions: NextAuthOptions = {
     },
     /**
      * Ensure session.user.id is present
-     * NextAuth puts the user id in JWT; we need it 4 our sessions.
+     * NextAuth puts the user id in JWT; we need it for our sessions.
      */
     async jwt({ token, user, account }) {
       // When user signs in, store their ID in the token

@@ -1,31 +1,24 @@
 /**
  * Purpose:
- *   Individual review API endpoint for fetching review details
+ *   Review detail API for fetching a single review with context
  *
  * Scope:
- *   - Used by review detail pages (/review/[id])
- *   - Provides complete review information with author and viewer context
+ *   - Review detail pages that need the full review and metadata
+ *   - Places where a single review needs to be shown with author and viewer state
  *
  * Role:
- *   - Fetches single review by ID with validation
- *   - Includes author information (username, name, image)
- *   - Includes viewer like status (whether current user liked the review)
- *   - Returns formatted review response for client display
+ *   - Look up one review by ID and validate that it exists
+ *   - Enrich the review with author details and whether the viewer has liked it
+ *   - Return a normalized shape that matches other review responses
  *
  * Deps:
- *   - app/utils/reviewResponse for formatting review data
- *   - app/utils/users for fetching author information
- *   - app/utils/likes for checking viewer like status
- *   - lib/validation for ObjectId validation
- *   - lib/ensure-indexes for database indexes
- *
- * References:
- *   - Next.js Dynamic Route Handlers: https://nextjs.org/docs/app/building-your-application/routing/route-handlers
- *   - Route params: https://nextjs.org/docs/messages/sync-dynamic-apis
- *   - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
+ *   - MongoDB via lib/mongodb and lib/ensure-indexes
+ *   - Validation helpers from lib/validation for safe ID handling
+ *   - Shared review, user, and like utilities for formatting and viewer context
  *
  * Notes:
- *   - Author and viewer like status included in single response to reduce client requests
+ *   - Designed so clients do not need follow up calls for author or like status
+ *   - Uses NextAuth session data when present to compute viewerLiked
  *
  */
 
@@ -44,35 +37,57 @@ export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ id: string }> };
 
+/**
+ * Purpose:
+ *   Fetch a single review by ID with author information and viewer like status
+ *
+ * Params:
+ *   - _: Next.js request object
+ *   - params: route parameters with review ID
+ *
+ * Returns:
+ *   - JSON response with formatted review object including author and viewerLiked fields
+ *
+ * Notes:
+ *   - returns 404 response if review ID is invalid or review does not exist
+ *   - author and viewer like status included in single response
+ */
 export async function GET(_: Request, { params }: Ctx) {
+  // step 1: ensure review indexes exist before querying using ensureIndexes from lib/ensure-indexes
   await ensureIndexes();
   const { id } = await params;
   const database = await db();
 
-  // Validate the identifier before querying MongoDB
+  // step 2: convert the review id from params into a safe ObjectId using safeObjectId from lib/validation so we only query MongoDB with valid ids
   const asObjectId = safeObjectId(id);
   if (!asObjectId) {
+    // return 404 when the review id is invalid (review detail page will show not found)
     return notFoundResponse();
   }
 
+  // step 3: look up the non deleted review document by id
   const review = await database.collection("reviews").findOne({
     _id: asObjectId,
     deletedAt: null,
   });
-  if (!review) return notFoundResponse();
+  if (!review) {
+    // return 404 when the review is missing or soft deleted (review detail page will show not found)
+    return notFoundResponse();
+  }
 
+  // step 4: read viewer session so we can include viewerLiked state
   const session = await getServerSession(authOptions);
 
-  // Fetch author metadata so the client does not need a second request
+  // fetchUserById from app/utils/users returns the basic profile for this review's author so the review detail page can display author info in same request
   const author = await fetchUserById(review.userId);
 
-  // Determine if the current viewer has liked this review
+  // isItemLiked from app/utils/likes checks whether the current viewer has liked this review so the review detail page can show the correct like button state
   const viewerLiked = await isItemLiked(
     session?.user?.id ?? null,
     "review",
     String(review._id)
   );
 
-  // Return a normalized document so clients receive author and viewer context in a single call
+  // formatReview from app/utils/reviewResponse maps the MongoDB review and related data into the response shape used by the review detail page
   return NextResponse.json(formatReview(review, author, viewerLiked));
 }

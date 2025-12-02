@@ -1,27 +1,24 @@
 /**
  * Purpose:
- *   API endpoint for fetching top albums by genre
+ *   Genre based discovery API for fetching top albums by tag
  *
  * Scope:
- *   - Used by home page genre selector feature
- *   - Provides genre-based album discovery
+ *   - Home and discovery views that list albums for a selected genre
+ *   - Features that surface trending or popular albums by style
  *
  * Role:
- *   - Fetches top albums from Last.fm API for a given genre
- *   - Enriches results with Spotify data when available (optional)
- *   - Caches results to reduce API calls
- *   - Handles pagination and result limits
+ *   - Call Last.fm to get top albums for a given tag
+ *   - Optionally enrich albums with Spotify metadata when configured
+ *   - Apply simple caching and pagination to keep responses fast
  *
  * Deps:
- *   - Last.fm API for genre-based album data
- *   - Spotify API (optional) for enriched album information
- *   - app/utils/lastfm for Last.fm integration and format conversion
- *   - app/types/lastfm for type definitions
+ *   - Last.fm API for core album and tag data
+ *   - Spotify API for enrichment
+ *   - Last.fm utilities and types from app/utils/lastfm and app/types/lastfm
  *
  * Notes:
- *   - Caches results with 1-hour TTL for default queries (page=1, limit=5 only)
- *   - Spotify enrichment: Uses 24-hour cache for album lookups, 3-second timeout per search
- *   - Falls back to Last.fm-only data if Spotify enrichment fails
+ *   - Uses in memory caches to reduce repeated external API calls
+ *   - Falls back gracefully to Last.fm only data when Spotify is unavailable or slower
  *
  */
 
@@ -207,6 +204,23 @@ async function enrichWithSpotifyData(albums: LastFMAlbum[]): Promise<any[]> {
   }
 }
 
+/**
+ * Purpose:
+ *   Fetch top albums for a given genre from Last.fm with Spotify enrichment
+ *
+ * Params:
+ *   - request: Next.js request object with query parameters: genre (required), limit (default 5, max 50), page (default 1)
+ *
+ * Returns:
+ *   - JSON response with genre, count, items array, page, limit, and hasMore boolean
+ *
+ * Notes:
+ *   - user may or may not be signed in
+ *   - returns 400 response if genre parameter is missing or too long
+ *   - caches results with 1 hour TTL
+ *   - Spotify enrichment uses 24 hour cache for album lookups with 3 second timeout per search
+ *   - falls back to Last.fm only data if Spotify enrichment fails
+ */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const genreInput = searchParams.get("genre")?.trim();

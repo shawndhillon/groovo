@@ -1,27 +1,26 @@
 /**
  * Purpose:
- *   User feed API endpoint for following-based review feed
+ *   Endpoint (Get) for following-based review feed for the home page
  *
  * Scope:
- *   - Used by home page feed section
- *   - Shows reviews from users the current user follows
+ *   - Home page feed section that shows activity from followed users
+ *   - Any feature that needs user based/scoped reviews
  *
  * Role:
- *   - Fetches reviews from followed users
- *   - Includes current user's own reviews in feed
- *   - Formats reviews with author info and viewer like status
- *   - Supports pagination for large feeds (max 50 items per page)
+ *   - Expose an authenticated API endpoint that returns reviews from followed users
+ *   - Include the current user's own reviews in the feed
+ *   - Attach author information and viewer like status to each review
+ *   - Paginate so the client can load the feed in pages
  *
  * Deps:
- *   - app/utils/reviewResponse for formatting review data
- *   - app/utils/users for batch fetching author information
- *   - app/utils/likes for checking viewer like status
- *   - lib/ensure-indexes for database indexes
- *   - app/api/auth/[...nextauth] for session management
+ *   - MongoDB via lib/mongodb for reviews and follows data
+ *   - NextAuth via authOptions and getServerSession for viewer
+ *   - Shared helpers for reviews, users, likes, and index management
  *
  * Notes:
- *   - Includes own reviews so users see their own activity in feed
- *
+ *   - assumes user is signed in for all requests in this file
+ *   - returns 401 response when there is no active session
+ *   - response shape is designed for the home feed UI and other follow-based views
  */
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -41,6 +40,16 @@ function num(v: any, def: number) {
   return Number.isFinite(n) && n > 0 ? n : def;
 }
 
+/**
+ * Purpose:
+ *   Fetch paginated feed of reviews from users the current user follows
+ *
+ * Params:
+ *   - req: Next.js request object with query parameters: page (optional, default 1), pageSize (optional, default 20, max 50)
+ *
+ * Returns:
+ *   - JSON response with items array of review objects with author info and like status
+ */
 export async function GET(req: Request) {
   await ensureIndexes();
 
@@ -89,9 +98,10 @@ export async function GET(req: Request) {
 
   // Check which reviews the current user has liked
   const reviewIds = items.map((r) => String(r._id));
+  // getLikedItemIds from app/utils/likes returns the set of review ids liked by the current user
   const likedReviewIds = await getLikedItemIds(session.user.id, "review", reviewIds);
 
-  // Format response with author info and like status
+  // formatReview from app/utils/reviewResponse shapes each MongoDB review for the feed response with author and like info
   const out = items.map((r) => {
     const author = userMap.get(r.userId) ?? null;
     return formatReview(r, author, likedReviewIds.has(String(r._id)));

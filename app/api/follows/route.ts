@@ -1,25 +1,24 @@
 /**
  * Purpose:
- *   Follows API endpoint for user following relationships
+ *   Follows API for managing who follows whom in the app
  *
  * Scope:
- *   - Used by FollowButton component for follow/unfollow actions
- *   - Manages user-to-user following relationships
+ *   - Profile pages and user lists that show follow state and follower counts
+ *   - Any feature that lets users follow or unfollow other users
  *
  * Role:
- *   - Creates and deletes follow relationships
- *   - Returns current follower count in response
- *   - Prevents self-following and duplicate follows
+ *   - Expose a single endpoint(POST) to create and remove follow relationships
+ *   - Keep follower counts up to date for a target user
+ *   - Enforce simple rules like preventing self follows and duplicates
  *
  * Deps:
- *   - lib/validation for input schema (FollowToggleSchema)
- *   - lib/mongodb for database access
- *   - lib/ensure-indexes for database indexes
- *   - app/api/auth/[...nextauth] for session management
+ *   - MongoDB via lib/mongodb and lib/ensure-indexes
+ *   - Validation schema FollowToggleSchema from lib/validation
+ *   - NextAuth via authOptions and getServerSession for session management
  *
  * Notes:
- *   - Returns 409 if follow already exists, but treats as success
- *   - Always returns no-cache headers for fresh follower counts
+ *   - returns 409 for duplicate follows but still treats the user as following
+ *   - always returns no cache headers so follower counts stay current
  *
  */
 
@@ -35,6 +34,23 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+/**
+ * Purpose:
+ *   Create or delete a follow relationship between users
+ *
+ * Params:
+ *   - req: Next.js request object with JSON body (targetUserId, action: "follow" or "unfollow")
+ *
+ * Returns:
+ *   - JSON response with following boolean and followersCount number
+ *
+ * Notes:
+ *   - returns 401 response when there is no active session
+ *   - returns 400 response if attempting to follow yourself
+ *   - returns 409 response if follow already exists, but treats as success
+ *   - always returns no-cache headers for fresh follower counts
+ *   - used by the FollowButton component
+ */
 export async function POST(req: Request) {
   await ensureIndexes();
   const session = await getServerSession(authOptions);

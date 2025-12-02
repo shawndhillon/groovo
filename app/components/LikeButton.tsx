@@ -1,23 +1,21 @@
 /**
  * Purpose:
- *   Interactive like button component for reviews and comments
+ *   Reusable UI for liking reviews and comments across the app
  *
  * Scope:
- *   - Used in review cards, comment sections, and detail pages
- *   - Provides optimistic UI updates for like actions
+ *   - Review cards, comment threads, and detail views that show like counts
+ *   - Any UI that needs a small like control wired to the likes API
  *
  * Role:
- *   - Displays like count and current like status
- *   - Handles like/unlike actions with optimistic updates
- *   - Shows loading state during API calls (disabled when busy)
- *   - Calls onChange callback when like status changes
+ *   - Render a like button with current count and state
+ *   - Optimistic like and unlike interactions on the client
+ *   - Notify parent components when like status or count changes
  *
  * Deps:
- *   - app/utils/social for toggleLike function
+ *   - toggleLike helper from app/utils/social for API communication
  *
  * Notes:
- *   - Uses optimistic updates, reverts on failure
- *   - Redirects to login on 401 response
+ *   - Relies on server routes in /api/likes for persistence
  *
  */
 
@@ -35,6 +33,28 @@ type Props = {
   onChange?: (liked: boolean, nextCount: number) => void;
 };
 
+/**
+ * Purpose:
+ *   Interactive like button component that shows like count and allows toggling likes
+ *
+ * Params:
+ *   - targetType: whether button is for a "review" or "comment"
+ *   - targetId: ID of the review or comment to like
+ *   - initialLiked: whether the item is initially liked (default false)
+ *   - initialCount: initial like count to display (default 0)
+ *   - className: optional CSS classes for styling
+ *   - onChange: optional callback called when like status changes with new liked state and count
+ *
+ * Returns:
+ *   - React element that renders a like button with count
+ *
+ * Notes:
+ *   - User may or may not be signed in
+ *   - immediately updates button state and count after a click using local React state
+ *   - sends a request to the likes API to keep the server in sync with the new state
+ *   - reverts optimistic update if API call fails
+ *   - redirects to login page on 401 response
+ */
 export default function LikeButton({
   targetType,
   targetId,
@@ -48,15 +68,18 @@ export default function LikeButton({
   const [busy, setBusy] = useState<boolean>(false);
 
   async function handleToggle() {
+    // prevent overlapping requests while a like or unlike is being resolved
     if (busy) return;
     setBusy(true);
 
+    // apply optimistic like toggle in local state so the button updates before the server responds
     const nextLiked = !liked;
     const nextCount = Math.max(0, count + (nextLiked ? 1 : -1));
     setLiked(nextLiked);
     setCount(nextCount);
 
     try {
+      // call toggleLike from app/utils/social to sync the optimistic state with the /api/likes endpoint
       const action: LikeAction = nextLiked ? "like" : "unlike";
       const res = await toggleLike(targetType, targetId, action);
 
@@ -68,7 +91,7 @@ export default function LikeButton({
       setCount(finalCount);
       onChange?.(finalLiked, finalCount);
     } catch {
-
+      // revert optimistic state when the server call fails so the UI matches the like state
       setLiked(liked);
       setCount(count);
     } finally {

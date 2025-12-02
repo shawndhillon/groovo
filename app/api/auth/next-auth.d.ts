@@ -1,6 +1,6 @@
 /**
  * Purpose:
- *   TypeScript type for NextAuth session
+ *   Extend NextAuth session typing
  *
  * Scope:
  *   - Extends NextAuth types to include user.id in session
@@ -14,9 +14,9 @@
  *   - next-auth for base types
  *
  * Notes:
- *   - This file extends NextAuth's default types
- *   - user.id is added in the JWT callback in route handler
- *
+ *   - Extends NextAuth's default Session type (not redefining it)
+ *   - Used throughout the app for type safe session access
+ *   - user.id is populated in the JWT callback in the NextAuth route handler
  */
 
 import NextAuth from "next-auth";

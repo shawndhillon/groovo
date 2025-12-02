@@ -1,25 +1,22 @@
 /**
  * Purpose:
- *   MongoDB connection and database access utilities
+ *   Shared MongoDB connection setup for server and API routes
  *
  * Scope:
- *   - Used by all API routes and server-side code that needs database access
+ *   - All server side code and API route handlers that talk to db
  *
  * Role:
- *   - Manages MongoDB client connection with Next.js global reuse
- *   - Exports clientPromise for adapter compatibility
- *   - Provides db() helper to get database instance
+ *   - Create and reuses a single MongoDB client across requests
+ *   - Expose clientPromise for libraries and adapters that expect it
+ *   - Provide db() helper for accessing db
  *
  * Deps:
+ *   - MongoDB Node.js driver
  *   - MONGODB_URI and MONGODB_DB environment variables
  *
- * References:
- *   - MongoDB Node.js Driver: https://www.mongodb.com/docs/drivers/node/current/
- *   - Client: https://www.mongodb.com/docs/drivers/node/current/fundamentals/connection/connect/#re-use-the-client
- *
  * Notes:
- *   - Client is reused across requests in development to prevent connection exhaustion
- *   - In production, Next.js handles connection pooling automatically
+ *   - Designed for the Next.js app router running on Node.js
+ *   - Reuses the client instance during dev
  *
  */
 
@@ -41,6 +38,17 @@ if (process.env.NODE_ENV !== "production") {
 
 export const clientPromise: Promise<MongoClient> = client.connect();
 
+/**
+ * Purpose:
+ *   Get the MongoDB database instance for querying collections
+ *
+ * Returns:
+ *   - Promise resolving to the MongoDB db instance
+ *
+ * Notes:
+ *   - Reuses the global client connection to prevent connection exhaustion
+ *   - Used by all API routes that need db access
+ */
 export async function db(): Promise<Db> {
   const conn = await clientPromise;
   return conn.db(dbName);
