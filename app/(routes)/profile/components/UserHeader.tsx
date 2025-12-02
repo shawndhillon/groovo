@@ -1,3 +1,30 @@
+/**
+ * Purpose:
+ *   Interactive profile header component that displays and edits basic user info.
+ *
+ * Scope:
+ *   - Used on the profile page (/profile) and user profile pages (/profile/user/[id])
+ *   - Supports both "self" mode (owner viewing their own page) and external view
+ *
+ * Role:
+ *   - Display avatar, name, username, bio, and profile statistics
+ *   - Allow owners (isSelf=true) to edit their name + bio inline
+ *   - Save edits via /api/profile/update
+ *   - Show Share Profile + Follow buttons for non-owners
+ *   - Handle loading, update syncing, and optimistic UI states
+ *
+ * Deps:
+ *   - next/image OR img tag (current implementation uses <img>)
+ *   - ShareButton for copying profile link
+ *   - FollowButton for following/unfollowing other users
+ *   - /api/profile/update for editing user metadata
+ *
+ * Notes:
+ *   - `localUser` keeps UI in sync with server updates while preventing flicker
+ *   - Edit state only applies to the owner view
+ *   - Username is read-only and should not be editable here
+ */
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,23 +32,30 @@ import ShareButton from "@/app/components/ShareButton";
 import FollowButton from "@/app/components/FollowButton";
 
 interface UserHeaderProps {
-  user: any;
+  user: any; // Should consider creating a dedicated type later
   loading: boolean;
-  isSelf: boolean;
+  isSelf: boolean; // Whether the viewer is the profile owner
 }
 
 export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
+  // Local UI state
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Local representation of the user (kept in sync with parent)
   const [localUser, setLocalUser] = useState(user);
 
+  // Form data used for editing name + bio
   const [formData, setFormData] = useState({
     name: user?.name || "",
     bio: user?.bio || "",
   });
 
-  // Sync updates from parent
+  /**
+   * Sync updates from parent
+   * (e.g., when profile refreshes after saving or navigating)
+   */
   useEffect(() => {
     if (user) {
       setLocalUser((prev: any) => ({ ...prev, ...user }));
@@ -32,10 +66,15 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
     }
   }, [user]);
 
+  /** Updates form input fields */
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  /**
+   * Save updated profile
+   * PUT /api/profile/update
+   */
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -50,6 +89,8 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
       if (!res.ok) throw new Error("Failed to update profile");
 
       const data = await res.json();
+
+      // Update local user UI
       setLocalUser((prev: any) => ({
         ...prev,
         ...data.user,
@@ -108,8 +149,9 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
           )}
         </div>
 
-        {/* User Info */}
+        {/* User information */}
         <div className="flex-1">
+          {/* Non-edit mode */}
           {!isSelf || !isEditing ? (
             <>
               <h1 className="text-2xl font-semibold tracking-tight">
@@ -119,10 +161,15 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
                 <p className="text-zinc-400 mt-1">@{localUser.username}</p>
               )}
               <p className="text-zinc-300 mt-2 max-w-md">
-                {localUser.bio || <span className="italic text-zinc-500">No bio available</span>}
+                {localUser.bio || (
+                  <span className="italic text-zinc-500">
+                    No bio available
+                  </span>
+                )}
               </p>
             </>
           ) : (
+            /** Edit mode UI */
             <div className="flex flex-col gap-3 max-w-md mt-1">
               <input
                 name="name"
@@ -130,6 +177,7 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
                 onChange={handleChange}
                 className="w-full p-2 rounded bg-zinc-800 border border-zinc-700"
               />
+
               <textarea
                 name="bio"
                 value={formData.bio}
@@ -137,6 +185,7 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
                 rows={3}
                 className="w-full p-2 rounded bg-zinc-800 border border-zinc-700"
               />
+
               {error && <p className="text-red-400 text-sm">{error}</p>}
             </div>
           )}
@@ -167,9 +216,10 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
         </div>
       </div>
 
-      {/* Actions (Decided Internally Based on isSelf) */}
+      {/* Action buttons */}
       <div className="flex justify-end mt-4 gap-2">
         {isSelf ? (
+          /* Self view: Edit + Save UI */
           !isEditing ? (
             <>
               <ShareButton
@@ -202,6 +252,7 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
             </>
           )
         ) : (
+          /* Public view: Share + Follow */
           <>
             <ShareButton
               url={`/profile/user/${localUser.id}`}

@@ -1,25 +1,33 @@
+/**
+ * Purpose:
+ *   Central data + state manager for the Review Details page.
+ *
+ * Scope:
+ *   - Used by: /review/[id]/page.tsx
+ *   - Client-side hook (no server components)
+ *
+ * Responsibilities:
+ *   - Fetch review data from `/api/reviews/[id]`
+ *   - Track loading + error states
+ *   - Manage like count, viewer like status, and comment count
+ *   - Normalize album snapshot into UI-ready fields (title, artists, cover)
+ *   - Format the review creation date for display
+ *
+ * Deps:
+ *   - React: useEffect, useState, useMemo
+ *   - Types: ReviewResponse, AlbumSnapshot (from app/types/reviews)
+ *   - Utils: albumCover, albumTitle, formatAlbumArtists, formatReviewDate
+ *     (from app/utils/reviewFormat)
+ *
+ * Notes:
+ *   - Any changes to the review API payload shape should be handled here,
+ *     so page + presentational components can stay simple and dumb.
+ *   - This hook exposes only UI-friendly values and safe fallbacks.
+ */
+
 "use client";
 
-/**
- * useReviewDetails Hook
- * =====================
- *
- * Purpose
- * -------
- * Centralizes all state + data fetching for the Review Details page.
- * The page (`/review/[id]`) uses this hook to:
- *
- * - Fetch review data from `/api/reviews/[id]`
- * - Track loading/error states
- * - Track and update like counts + viewer's like status
- * - Track and update total comment count
- * - Normalize album snapshot (title, artists, cover)
- * - Format the review creation date for display
- *
- * This keeps the page component clean, readable, and focused on layout.
- * Any future changes to review data or formatting should be done here.
- */
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Dispatch, SetStateAction } from "react";
 import type { ReviewResponse, AlbumSnapshot } from "../types/reviews";
 import {
   albumCover,
@@ -28,7 +36,36 @@ import {
   formatReviewDate,
 } from "../utils/reviewFormat";
 
-export function useReviewDetails(reviewId: string | undefined) {
+interface UseReviewDetailsResult {
+  // Raw review data from the backend
+  review: ReviewResponse | null;
+  loading: boolean;
+  error: string | null;
+
+  // Like + comment state
+  likeCount: number;
+  viewerLiked: boolean;
+  commentCount: number;
+
+  // Setters used by child components (CommentSection, like controls, etc.)
+  setLikeCount: Dispatch<SetStateAction<number>>;
+  setViewerLiked: Dispatch<SetStateAction<boolean>>;
+  setCommentCount: Dispatch<SetStateAction<number>>;
+
+  // Derived album info
+  albumSnapshot: AlbumSnapshot;
+  albumArtists: string;
+  albumName: string;
+  coverUrl: string;
+
+  // Derived date info
+  createdAt: string | null;
+}
+
+// useReviewDetails
+export function useReviewDetails(
+  reviewId: string | undefined
+): UseReviewDetailsResult {
   // Review object returned from backend API
   const [review, setReview] = useState<ReviewResponse | null>(null);
 

@@ -1,5 +1,23 @@
-// TypeScript interfaces for Spotify API data
-
+/**
+ * Purpose:
+ *   Strongly-typed representations of the Spotify Web API entities we use.
+ *
+ * Scope:
+ *   - Used by:
+ *       • Album routes (/album/[id])
+ *       • Search + discovery components
+ *       • Any Spotify data mapping utilities
+ *
+ * Responsibilities:
+ *   - Describe the subset of Spotify API responses that we care about.
+ *   - Provide type safety when calling Spotify or handling mapped responses.
+ *
+ * Notes:
+ *   - These types are meant to mirror Spotify's Web API, but only include
+ *     the fields the app actually uses.
+ *   - For review-related UI, we generally convert Spotify types into a
+ *     lighter AlbumSnapshot defined in app/types/reviews.ts.
+ */
 export interface SpotifyArtist {
   id: string;
   name: string;
@@ -42,6 +60,12 @@ export interface SpotifyAlbum {
   };
 }
 
+/**
+ * SpotifyAlbumWithTracks
+ *
+ * Represents the common pattern where an album payload includes a nested
+ * "tracks" object with paging metadata.
+ */
 export interface SpotifyAlbumWithTracks extends SpotifyAlbum {
   tracks: {
     items: SpotifyTrack[];

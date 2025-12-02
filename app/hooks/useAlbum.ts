@@ -1,3 +1,26 @@
+/**
+ * Purpose:
+ *   Client-side data hook for loading Spotify/Last.fm album metadata.
+ *
+ * Scope:
+ *   - Used by /album/[id] page and any component that needs full album details
+ *   - Wraps the /api/album/[id] API route
+ *
+ * Role:
+ *   - Fetch album details when albumId changes
+ *   - Expose standardized loading / error / album state
+ *   - Prevent unnecessary fetches (no albumId = skip)
+ *
+ * Deps:
+ *   - /api/album/[id] route (server-side)
+ *   - React state & effects
+ *
+ * Notes:
+ *   - Makes no assumptions about Spotify vs Last.fm data shape; the server API
+ *     should normalize the album object before returning it.
+ *   - Hook always returns a stable shape: { album, isLoading, error }
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";

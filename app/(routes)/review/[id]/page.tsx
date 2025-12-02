@@ -1,99 +1,70 @@
-"use client";
-
 /**
- * Review Details Page
- * Route: /review/[id]
+ * Purpose:
+ *   Detail page for a single review, showing full review content,
+ *   album context, and discussion (comments/likes).
  *
- * This is the main page component for displaying a single review and its related
- * context. It is responsible for:
+ * Scope:
+ *   - Route: /review/[id]
+ *   - Client component using useParams + useReviewDetails
  *
- * - Reading the dynamic `id` route parameter (the review id).
- * - Loading review details via the `useReviewDetails` hook.
- * - Rendering three main sections:
- *    1) The review header (title, rating, stats).
- *    2) The album spotlight (cover art + album info).
- *    3) The full review body plus the comments & likes section.
- * - Rendering a sidebar with reviewer information and review stats.
+ * Role:
+ *   - Read dynamic reviewId from the URL
+ *   - Fetch review details via useReviewDetails(reviewId)
+ *   - Render:
+ *       • ReviewHeader (summary: rating, counts, metadata)
+ *       • AlbumSpotlight (album art + artist info)
+ *       • Full review body
+ *       • CommentSection (comments + likes)
+ *       • ReviewerSidebar (author info + stats)
+ *   - Handle loading and error states
  *
- * IMPORTANT: This page is a client component (`"use client"`), because it uses
- * React hooks like `useParams` and the custom `useReviewDetails` hook that relies
- * on client-side fetching/state.
+ * Deps:
+ *   - next/navigation: useParams
+ *   - app/hooks/useReviewDetails for data loading and derived fields
+ *   - app/components/Header for global site header
+ *   - app/components/comments/CommentSection
+ *   - app/components/reviews/ReviewHeader
+ *   - app/components/reviews/AlbumSpotlight
+ *   - app/components/reviews/ReviewSidebar
+ *
+ * Notes:
+ *   - Uses a local `mounted` flag to avoid hydration mismatches
+ *     when useReviewDetails uses client-only APIs.
+ *   - Any changes to the review data model should generally be made
+ *     in useReviewDetails, then passed through this page.
  */
+
+"use client";
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
 import Header from "@/app/components/Header";
 import CommentSection from "@/app/components/comments/CommentSection";
+import { ReviewHeader } from "@/app/(routes)/review/[id]/components/ReviewHeader";
+import { AlbumSpotlight } from "@/app/(routes)/review/[id]/components/AlbumSpotlight";
+import { ReviewerSidebar } from "@/app/(routes)/review/[id]/components/ReviewSidebar";
 
 import { useReviewDetails } from "@/app/hooks/useReviewDetails";
-import { ReviewHeader } from "@/app/components/reviews/ReviewHeader";
-import { AlbumSpotlight } from "@/app/components/reviews/AlbumSpotlight";
-import { ReviewerSidebar } from "@/app/components/reviews/ReviewSidebar";
 
 /**
- * ReviewDetailsPage
+ * Top-level React component for /review/[id].
  *
- * Top-level React component rendered for the `/review/[id]` route.
- * - Reads the `id` route param as `reviewId`.
- * - Uses `useReviewDetails(reviewId)` to load all derived review/album state.
- * - Handles loading and error states.
- * - Composes UI using smaller presentational components:
- *   - <ReviewHeader />
- *   - <AlbumSpotlight />
- *   - <CommentSection />
- *   - <ReviewerSidebar />
- *
- * If you need to modify how data is fetched or derived, do that in the
- * `useReviewDetails` hook. This component should stay focused on:
- * - wiring things together
- * - controlling what to show in loading/error/success states
- * - passing callbacks and props to child components.
+ * - Reads reviewId from the route params
+ * - Delegates data loading to useReviewDetails(reviewId)
+ * - Renders main content + sidebar based on loading/error/success
  */
-
 export default function ReviewDetailsPage() {
-  /**
-   * Read the dynamic route parameter from Next.js App Router.
-   *
-   * - For a URL such as `/review/abc123`, `params.id` will be `"abc123"`.
-   * - The generic `<{ id?: string }>` makes `params.id` typed as `string | undefined`.
-   * - We fallback to an empty string if `id` is missing, so `useReviewDetails("")`
-   *   can handle the missing-id case internally (e.g., by setting an error state).
-   */
+  // Read dynamic route param: /review/[id]
   const params = useParams<{ id?: string }>();
   const reviewId = params?.id ?? "";
   
-  // Prevent hydration mismatches by ensuring we only render after client-side mount
+  // Guard to avoid hydration mismatches if hooks rely on client-only APIs
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  /**
-   * useReviewDetails(reviewId)
-   * --------------------------
-   * Custom hook encapsulating **all data fetching and derived review state**.
-   * It returns:
-   *
-   * - `review`: the raw review object (or null if not loaded / not found).
-   * - `loading`: boolean, true while fetching data.
-   * - `error`: string | null, an error message suitable for user display.
-   *
-   * - `likeCount`: number of likes for this review.
-   * - `viewerLiked`: whether the current viewer has liked this review.
-   * - `commentCount`: number of comments associated with this review.
-   *
-   * - `setLikeCount`, `setViewerLiked`, `setCommentCount`:
-   *     state setters to allow child components (like CommentSection) to
-   *     update these values and keep the page-level state in sync.
-   *
-   * - `albumName`, `albumArtists`, `coverUrl`, `createdAt`:
-   *     derived values for display, already formatted/normalized by the hook.
-   *
-   * NOTE: If you extend the review model (e.g., add tags, genres, etc.),
-   * update `useReviewDetails` to expose new fields, and then pass them
-   * into the relevant child components from here.
-   */
 
   const {
     review,
@@ -111,7 +82,7 @@ export default function ReviewDetailsPage() {
     createdAt,
   } = useReviewDetails(reviewId);
 
-  // Don't render content until after client-side mount to prevent hydration mismatches
+  // Pre-mount fallback (minimal content)
   if (!mounted) {
     return (
       <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-black text-white">
@@ -128,6 +99,7 @@ export default function ReviewDetailsPage() {
       <Header showSearch />
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10 md:flex-row">
+        {/* Main article */}
         <article className="flex-1 space-y-6 rounded-3xl border border-white/10 bg-zinc-900/60 p-6 shadow-lg backdrop-blur">
           {loading && (
             <div className="text-sm text-zinc-400">Loading review…</div>
@@ -183,7 +155,8 @@ export default function ReviewDetailsPage() {
             </>
           )}
         </article>
-
+        
+        {/* Sidebar (only when we have data) */}
         {!loading && !error && review && (
           <ReviewerSidebar
             review={review}

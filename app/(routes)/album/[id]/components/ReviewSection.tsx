@@ -1,8 +1,36 @@
+/**
+ * Purpose:
+ *   Album reviews section that displays existing reviews and provides
+ *   an entry point for writing a new review.
+ *
+ * Scope:
+ *   - Used on the album detail page (/album/[id])
+ *   - Wraps ReviewsPanel (list) and ReviewDialog (create/edit)
+ *
+ * Role:
+ *   - Fetch the first page of reviews for a given album
+ *   - Render the reviews list with loading/error states
+ *   - Show a "Write a review" CTA that opens the ReviewDialog
+ *   - Refresh the list after a successful review submission
+ *
+ * Deps:
+ *   - fetchReviewsPage() from app/utils/reviews
+ *   - ReviewsPanel for displaying review cards
+ *   - ReviewDialog for creating a new review
+ *   - SpotifyAlbumWithTracks for album context
+ *
+ * Notes:
+ *   - Currently fetches a single page (page=1, pageSize=20); pagination
+ *     can be added later in ReviewsPanel if needed.
+ *   - album is passed through as albumSnapshot to the dialog; the dialog
+ *     is responsible for normalizing this into whatever snapshot type it uses.
+ */
+
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import ReviewsPanel from "@/app/components/ReviewsPanel";
-import ReviewDialog from "@/app/components/ReviewDialog";
+import ReviewsPanel from "@/app/(routes)/album/[id]/components/ReviewsPanel";
+import ReviewDialog from "@/app/(routes)/album/[id]/components/ReviewDialog";
 import type { SpotifyAlbumWithTracks } from "@/app/types/spotify";
 import { fetchReviewsPage } from "@/app/utils/reviews";
 import type { UIReview } from "@/app/utils/reviews";

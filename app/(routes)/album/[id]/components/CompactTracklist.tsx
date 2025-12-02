@@ -1,3 +1,22 @@
+/**
+ * Purpose:
+ *   Compact tracklist component for displaying album tracks
+ *
+ * Scope:
+ *   - Used on album detail pages to show track listings
+ *   - Displays tracks in a scrollable container with formatting
+ *
+ * Role:
+ *   - Renders track list with track numbers, names, and durations
+ *   - Provides formatted duration display (MM:SS)
+ *   - Handles scrolling for albums with many tracks
+ *
+ * Deps:
+ *   - None (self-contained component)
+ *
+ * Notes:
+ *   - formatDuration function is exported but only used internally
+ */
 
 "use client";
 
@@ -54,7 +73,7 @@ export default function CompactTracklist({
       <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4 shadow-2xl backdrop-blur">
         <h2 className="text-xl font-semibold mb-3">{title}</h2>
 
-        <div className="max-h-[400px] overflow-y-auto tracklist-scrollbar space-y-1 pr-2" role="list">
+        <div className="max-h-[300px] overflow-y-auto tracklist-scrollbar space-y-1 pr-2" role="list">
           {tracksToShow.map((track, idx) => (
             <div
               key={track.id}

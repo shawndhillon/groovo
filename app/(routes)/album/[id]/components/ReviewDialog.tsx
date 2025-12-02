@@ -1,33 +1,56 @@
+/**
+ * Purpose:
+ *   Modal dialog for writing a review for a specific album.
+ *
+ * Scope:
+ *   - Used on the album detail page (/album/[id]) via ReviewSection
+ *   - Client-only component that depends on user session (via API)
+ *
+ * Role:
+ *   - Collect rating + text input from the user
+ *   - Map the raw album object into a DB-friendly snapshot
+ *   - POST a new review using utils/reviews.ts helpers
+ *   - Surface validation + server errors to the user
+ *   - Notify parent via onSuccess callback after successful creation
+ *
+ * Deps:
+ *   - StarInput: star-based rating control
+ *   - buildAlbumSnapshotForDb: normalizes album object for review storage
+ *   - postReview: posts a new review to the backend
+ *
+ * Notes:
+ *   - Does not handle editing existing reviews; this is create-only
+ *   - Uses a full-screen overlay with a centered card for the modal
+ *   - onSuccess is optional; when provided, parent can refresh review list
+ */
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import StarInput from "./StarInput";
+import StarInput from "@/app/components/StarInput";
 import {
   buildAlbumSnapshotForDb,
   postReview,
   PostReviewResult,
-} from "./../utils/reviews";
+} from "@/app/utils/reviews";
 
-/**
- * ReviewDialog
- * - Modal for writing a review for a specific album.
- * - Uses utils/reviews.ts helpers for payload shaping and POST.
- */
+interface ReviewDialogProps {
+  open: boolean;
+  onClose: () => void;
+  albumId: string;
+  albumName?: string;
+  albumSnapshot?: unknown; // raw Spotify album object
+  onSuccess?: (newReviewId: string) => void;
+}
+
 export default function ReviewDialog({
   open,
   onClose,
   albumId,
   albumName,
-  albumSnapshot,         // raw Spotify album object (we'll map it)
-  onSuccess,             // callback with new review id
-}: {
-  open: boolean;
-  onClose: () => void;
-  albumId: string;
-  albumName?: string;
-  albumSnapshot?: unknown;
-  onSuccess?: (newReviewId: string) => void;
-}) {
+  albumSnapshot,
+  onSuccess,
+}: ReviewDialogProps) {
   const [rating, setRating] = useState<number>(0);
   const [text, setText] = useState<string>("");
   const [busy, setBusy] = useState<boolean>(false);
@@ -50,10 +73,26 @@ export default function ReviewDialog({
 
   if (!open) return null;
 
-  async function handleSubmit() {
-    if (rating < 1) return setErrorMsg("Please select a rating.");
-    if (text.trim().length < 10)
-      return setErrorMsg("Review must be at least 10 characters.");
+   /**
+   * Handle review submission.
+   *
+   * - Validates rating and minimum text length
+   * - Calls postReview() with normalized payload
+   * - Handles auth/duplicate/server errors
+   * - Invokes onSuccess with the new review id on success
+   *
+   * @returns {Promise<void>} Resolves when submission flow completes
+   */
+  async function handleSubmit(): Promise<void> {
+    if (rating < 1) {
+      setErrorMsg("Please select a rating.");
+      return;
+    }
+
+    if (text.trim().length < 10) {
+      setErrorMsg("Review must be at least 10 characters.");
+      return;
+    }
 
     setBusy(true);
     setErrorMsg(null);
@@ -68,14 +107,22 @@ export default function ReviewDialog({
     setBusy(false);
 
     if (!result.ok) {
-      if (result.status === 401) return setErrorMsg("You must be logged in to post a review.");
-      if (result.status === 409) return setErrorMsg("You already reviewed this album.");
-      return setErrorMsg(result.message);
+      if (result.status === 401) {
+        setErrorMsg("You must be logged in to post a review.");
+        return;
+      }
+      if (result.status === 409) {
+        setErrorMsg("You already reviewed this album.");
+        return;
+      }
+      setErrorMsg(result.message);
+      return;
     }
 
     onSuccess?.(result.id);
     onClose();
   }
+
 
   return (
     <div

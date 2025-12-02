@@ -1,3 +1,30 @@
+/**
+ * Purpose:
+ *   Comment + like panel for a single review.
+ *
+ * Scope:
+ *   - Used on the Review Details page: /review/[id]
+ *   - Client-only component (uses hooks, local state, side effects)
+ *
+ * Responsibilities:
+ *   - Render a review-level like button
+ *   - Toggle visibility of the comments panel
+ *   - Load comments for a review via useComments(reviewId)
+ *   - Post new top-level comments
+ *   - Keep the parent review's comment count in sync via callback
+ *
+ * Deps:
+ *   - LikeButton: handles review like/unlike UI + behavior
+ *   - useComments(reviewId): fetches, stores, and mutates comment data
+ *   - CommentList: displays top-level comments + their replies
+ *
+ * Notes:
+ *   - This component is intentionally high-level; more detailed comment
+ *     rendering is delegated to CommentList and the useComments hook.
+ *   - The parent (e.g. /review/[id]/page.tsx) can react to like/comment
+ *     changes via onReviewLikeChange and onCommentCountChange.
+ */
+
 "use client";
 
 import {

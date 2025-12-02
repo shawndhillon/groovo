@@ -1,19 +1,41 @@
-// components/ReviewsPanel.tsx
-import ShareButton from "./ShareButton";
+/**
+ * Purpose:
+ *   Display a scrollable list of album reviews with built-in loading,
+ *   error, and empty states.
+ *
+ * Scope:
+ *   - Used inside ReviewSection on album pages (/album/[id])
+ *   - Can be reused anywhere a read-only list of reviews is needed
+ *
+ * Role:
+ *   - Render review cards (date, rating, text, reviewer)
+ *   - Provide clean fallback states based on loading, error, or empty list
+ *   - Support optional max height for scroll regions
+ *
+ * Deps:
+ *   - ShareButton for sharing review links
+ *
+ * Notes:
+ *   - Reviews must already be normalized to the `Review` type
+ *   - Does not perform pagination; parent should handle if needed
+ */
 
-export type Review = {
-  id: string;
-  userName: string;
-  rating: number;
-  reviewText: string;
-  createdAt: string; // ISO date
-};
+import ShareButton from "@/app/components/ShareButton";
+import type { UIReview } from "@/app/utils/reviews";
 
+/**
+ * Props for the ReviewsPanel component.
+ *
+ * @property reviews   - List of reviews in UIReview shape
+ * @property title     - Optional section title (defaults to "Reviews")
+ * @property maxHeight - Optional max-height for the scroll container
+ * @property loading   - When true, shows a loading state
+ * @property error     - When set, shows an error state
+ */
 interface ReviewsPanelProps {
-  reviews: Review[];
+  reviews: UIReview[];
   title?: string;
   maxHeight?: string;
-  /** optional states */
   loading?: boolean;
   error?: string | null;
 }
@@ -25,6 +47,7 @@ export default function ReviewsPanel({
   loading = false,
   error = null,
 }: ReviewsPanelProps) {
+  // Loading State
   if (loading) {
     return (
       <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
@@ -33,7 +56,7 @@ export default function ReviewsPanel({
       </section>
     );
   }
-
+  // Error State
   if (error) {
     return (
       <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
@@ -42,7 +65,7 @@ export default function ReviewsPanel({
       </section>
     );
   }
-
+  // Empty State
   if (reviews.length === 0) {
     return (
       <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
@@ -52,6 +75,7 @@ export default function ReviewsPanel({
     );
   }
 
+  // Review List
   return (
     <section className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4">
       <h3 className="mb-3 text-lg font-semibold">{title}</h3>
@@ -66,8 +90,12 @@ export default function ReviewsPanel({
                   day: "numeric",
                 })}
               </span>
+              
               <div className="flex items-center gap-2">
-                <span className="text-violet-300 font-semibold">★ {r.rating}/5</span>
+                <span className="text-violet-300 font-semibold">
+                  ★ {r.rating}/5
+                </span>
+
                 <ShareButton
                   url={`/review/${r.id}`}
                   label="Share"
@@ -75,7 +103,11 @@ export default function ReviewsPanel({
                 />
               </div>
             </div>
+
+            {/* Review text */}
             <p className="mt-2 text-sm text-zinc-100">{r.reviewText}</p>
+
+            {/* Reviewer */}
             <p className="mt-1 text-xs text-zinc-400">by {r.userName}</p>
           </li>
         ))}

@@ -1,8 +1,34 @@
+/**
+ * Purpose:
+ *   Album header component displaying album metadata and actions
+ *
+ * Scope:
+ *   - Used on album detail pages (/album/[id])
+ *   - Shows album cover, title, artist, and metadata
+ *
+ * Role:
+ *   - Displays album artwork, name, and artist information
+ *   - Shows release date, track count, and genres (first 3)
+ *   - Provides links to Spotify or Last.fm based on album source
+ *   - Includes back navigation button (router.back())
+ *   - Includes an "Add to Library" toggle alongside the play button
+ *
+ * Deps:
+ *   - app/utils/date for date formatting (formatAlbumDate)
+ *   - app/types/spotify for album type (SpotifyAlbumWithTracks)
+ *   - AddToLibraryButton for library actions
+ *
+ * Notes:
+ *   - Detects Last.fm albums by ID format (contains "lastfm::") or lastfm property
+ *   - Shows appropriate play button based on album source (Last.fm or Spotify)
+ *   - Library button uses the same row as the play button for cohesive UI
+ */
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatAlbumDate } from "@/app/utils/date";
 import type { SpotifyAlbumWithTracks } from "@/app/types/spotify";
+import AddToLibraryButton from "./AddToLibraryButton";
 
 export default function AlbumHeader({ album }: { album: SpotifyAlbumWithTracks }) {
   const router = useRouter();
@@ -11,6 +37,14 @@ export default function AlbumHeader({ album }: { album: SpotifyAlbumWithTracks }
   const isLastFM = album.id.includes("lastfm::") || Boolean(album.lastfm);
   const lastFMUrl = album.lastfm?.url || "";
   const spotifyUrl = album.external_urls?.spotify || "";
+
+  // Payload for AddToLibraryButton
+  const libraryAlbum = {
+    id: album.id,
+    title: album.name,
+    coverUrl: album.images[0]?.url || "/placeholder-album.svg",
+    artists: album.artists.map((artist) => artist.name),
+  };
 
   return (
     <div className="flex flex-col md:flex-row gap-8 mb-8">
@@ -89,6 +123,8 @@ export default function AlbumHeader({ album }: { album: SpotifyAlbumWithTracks }
               Play on Spotify
             </a>
           )}
+          {/* Add to Library button (always visible) */}
+          <AddToLibraryButton album={libraryAlbum} />
         </div>
       </div>
     </div>
