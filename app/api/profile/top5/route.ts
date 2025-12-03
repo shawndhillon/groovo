@@ -1,3 +1,31 @@
+/**
+ * Purpose:
+ *   API route for managing user's top 5 favorite albums
+ *
+ * Scope:
+ *   Used by profile pages to display and update favorite albums
+ *   Endpoints: GET /api/profile/top5, PUT /api/profile/top5
+ *
+ * Role:
+ *   GET: Retrieves top 5 favorites for current user or specified userId
+ *   PUT: Updates current user's top 5 favorites list
+ *   Validates that all favorites are albums the user has reviewed
+ *   Hydrates favorite data with review information and album snapshots
+ *
+ * Deps:
+ *   next-auth for session management (getServerSession, authOptions)
+ *   lib/mongodb for database connection
+ *   lib/validation for FavoritesTop5PayloadSchema validation
+ *   MongoDB collections: users, reviews
+ *
+ * Notes:
+ *   GET supports optional ?userId query param to view another user's favorites
+ *   PUT requires authentication and only allows updating own favorites
+ *   All favorites must be albums the user has reviewed (enforced by validation)
+ *   Favorites are stored as array of {rank, albumId} on user document
+ *   Returns items sorted by rank when fetching
+ */
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -6,7 +34,14 @@ import { FavoritesTop5PayloadSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
-// GET current user's favorites (or ?userId=<id> to view another user's favorites)
+/**
+ * Retrieves top 5 favorite albums for a user (current user or specified userId)
+ *
+ * @param {Request} req - Request object with optional ?userId query parameter
+ * @returns {Promise<NextResponse>} JSON response with items array containing favorite albums with review data
+ * @throws {401} If no userId provided and user is not authenticated
+ * @throws {500} If server error occurs
+ */
 export async function GET(req: Request) {
   try {
     const database = await db();
@@ -78,7 +113,16 @@ export async function GET(req: Request) {
   }
 }
 
-// PUT current user's favoritesTop5 (only albums the user has reviewed)
+/**
+ * Updates the current authenticated user's top 5 favorite albums
+ *
+ * @param {Request} req - Request object containing JSON body with favorites array
+ * @returns {Promise<NextResponse>} JSON response with ok flag on success
+ * @throws {401} If user is not authenticated
+ * @throws {400} If validation fails or not all favorites have reviews
+ * @throws {404} If user not found in database
+ * @throws {500} If server error occurs
+ */
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions);

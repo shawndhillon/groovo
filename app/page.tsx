@@ -1,4 +1,34 @@
 
+/**
+ * Purpose:
+ *   Main home page component displaying feed, top albums, and genre-based albums
+ *
+ * Scope:
+ *   Root page component for the home route (/)
+ *   Combines multiple sections: top releases, genre albums, and user feed
+ *
+ * Role:
+ *   Displays top albums section (new releases)
+ *   Provides genre-based album browsing with pagination
+ *   Shows user feed with following/global toggle for authenticated users
+ *   Handles genre selection modal and album pagination state
+ *   Manages feed mode switching (following vs global)
+ *
+ * Deps:
+ *   app/components/Header for site navigation
+ *   app/components/home/TopAlbumsSection for new releases
+ *   app/components/home/FeedReviewCard for feed items
+ *   app/components/GenreSelector for genre selection modal
+ *   app/hooks/useFeed for feed data and state management
+ *   app/utils/feed for review ID extraction
+ *
+ * Notes:
+ *   Genre albums section supports pagination and albums-per-page selection
+ *   Feed section shows different content based on authentication status
+ *   Genre selector modal can be opened to change selected genre
+ *   Feed mode toggle only visible to authenticated users
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,6 +41,11 @@ import GenreSelector from "./components/GenreSelector";
 import { useFeed } from "./hooks/useFeed";
 import { getReviewId } from "./utils/feed";
 
+/**
+ * Home page component that renders top albums, genre browsing, and user feed
+ *
+ * @returns {JSX.Element} Complete home page with all sections
+ */
 export default function HomePage() {
   const {
     feedMode,
@@ -30,7 +65,12 @@ export default function HomePage() {
   const [hasMoreAlbums, setHasMoreAlbums] = useState(false);
   const [albumsPerPage, setAlbumsPerPage] = useState(25);
   
-  // Fetch albums when genre is selected, page changes, or # albums changes
+  /**
+   * Fetches albums for the selected genre when genre, page, or albumsPerPage changes
+   * 
+   * Handles API errors gracefully and deduplicates albums by ID
+   * Updates hasMoreAlbums flag based on API response
+   */
   useEffect(() => {
     if (!selectedGenre) {
       setGenreAlbums([]);
@@ -87,7 +127,11 @@ export default function HomePage() {
       .finally(() => setGenreLoading(false));
   }, [selectedGenre, genrePage, albumsPerPage]);
 
-  // Reset page when genre or # albums changes
+  /**
+   * Resets pagination to page 1 and clears albums when genre or albumsPerPage changes
+   * 
+   * Ensures fresh data when switching genres or changing page size
+   */
   useEffect(() => {
     setGenrePage(1);
     setGenreAlbums([]);

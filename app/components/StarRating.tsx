@@ -1,3 +1,33 @@
+/**
+ * Purpose:
+ *   Display-only star rating component for showing ratings
+ *
+ * Scope:
+ *   Used throughout the app to display review ratings visually
+ *   Appears on review cards, album pages, and feed items
+ *
+ * Role:
+ *   Renders filled/empty stars based on rating value
+ *   Provides visual representation of numeric ratings
+ *   Supports customizable star count and size
+ *
+ * Deps:
+ *   None (pure presentational component)
+ *
+ * Notes:
+ *   Read-only component (not interactive)
+ *   Stars fill with violet-500 when active, zinc-700 when inactive
+ *   Default rating scale is 0 to 5 stars
+ *   Uses ARIA label for accessibility
+ */
+
+/**
+ * Props for StarRating component
+ *
+ * @property {number} value - Rating value to display (0 to outOf)
+ * @property {number} [outOf=5] - Maximum rating value (number of stars)
+ * @property {string} [size="h-3 w-3"] - Tailwind CSS classes for star size
+ */
 export default function StarRating({
   value,
   outOf = 5,

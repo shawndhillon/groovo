@@ -1,13 +1,50 @@
+/**
+ * Purpose:
+ *   Site-wide header component with navigation and authentication
+ *
+ * Scope:
+ *   Used on all pages as the main navigation bar
+ *   Provides site branding, search, and user authentication links
+ *
+ * Role:
+ *   Displays site logo and title (both link to home)
+ *   Shows "Upcoming Events" navigation link
+ *   Conditionally renders search bar based on showSearch prop
+ *   Displays authentication state (logged in/out) with appropriate links
+ *   Sticky header that stays visible while scrolling
+ *
+ * Deps:
+ *   app/components/SearchBar for search functionality
+ *   app/hooks/useCurrentUser for authentication state
+ *
+ * Notes:
+ *   Sticky positioning with backdrop blur for modern glass effect
+ *   Shows loading state while checking authentication
+ *   Search bar can be hidden via showSearch prop (defaults to true)
+ *   Authentication links change based on login status
+ */
+
 "use client";
 
 import Link from "next/link";
 import SearchBar from "./SearchBar";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
+/**
+ * Props for Header component
+ *
+ * @property {boolean} [showSearch=true] - Whether to display the search bar
+ */
 interface HeaderProps {
   showSearch?: boolean;
 }
 
+/**
+ * Renders the site header with navigation, search, and authentication
+ *
+ * @param {HeaderProps} props - Component props
+ * @returns {JSX.Element} Header component with navigation and auth links
+ */
 export default function Header({showSearch = true}: HeaderProps) {
   const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const isLoggedIn = !!currentUser;

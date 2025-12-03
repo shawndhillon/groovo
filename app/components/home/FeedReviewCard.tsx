@@ -1,3 +1,30 @@
+/**
+ * Purpose:
+ *   Review card component for displaying reviews in the home feed
+ *
+ * Scope:
+ *   Used on the home page feed section to display review items
+ *   Shows review content with album metadata and comment section
+ *
+ * Role:
+ *   Displays album cover, name, and artist information
+ *   Shows review rating, author, and creation date
+ *   Renders review body text with proper formatting
+ *   Includes link to full review detail page
+ *   Embeds comment section for inline commenting
+ *
+ * Deps:
+ *   app/types/feed for FeedItem type
+ *   app/utils/feed for formatting helpers (albumName, artistLine, cover, etc.)
+ *   app/components/comments/CommentSection for comment functionality
+ *
+ * Notes:
+ *   Comment section is initially open (initialOpen={true})
+ *   Handles both likeCount and viewerLiked from review data
+ *   Album cover links to album detail page
+ *   Review author links to user profile page
+ */
+
 "use client";
 
 import CommentSection from "@/app/components/comments/CommentSection";
@@ -13,11 +40,23 @@ import {
 } from "@/app/utils/feed";
 import Link from "next/link";
 
+/**
+ * Props for FeedReviewCard component
+ *
+ * @property {FeedItem} review - Review data to display
+ * @property {string} reviewId - Unique identifier for the review
+ */
 type FeedReviewCardProps = {
   review: FeedItem;
   reviewId: string;
 };
 
+/**
+ * Renders a review card with album info, review content, and comment section
+ *
+ * @param {FeedReviewCardProps} props - Component props
+ * @returns {JSX.Element} Review card with album metadata and review content
+ */
 export default function FeedReviewCard({ review, reviewId }: FeedReviewCardProps) {
   const snap = review.albumSnapshot;
   const name = albumName(snap);

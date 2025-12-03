@@ -1,3 +1,30 @@
+/**
+ * Purpose:
+ *   API route for fetching the current authenticated user's profile data
+ *
+ * Scope:
+ *   Used by profile pages and components that need current user information
+ *   Endpoint: GET /api/profile/me
+ *
+ * Role:
+ *   Retrieves authenticated user's profile from database
+ *   Counts user's albums (library), reviews, and followers
+ *   Returns user metadata including bio, name, username, image, email
+ *   Includes saved albums list for the user
+ *
+ * Deps:
+ *   next-auth for session management (getServerSession, authOptions)
+ *   lib/mongodb for database connection
+ *   MongoDB collections: users, albums, reviews, follows
+ *
+ * Notes:
+ *   Requires authentication (returns 401 if no session)
+ *   Falls back to email lookup if user ID from session is invalid
+ *   Uses string userKey for consistent ID format across collections
+ *   Defaults bio to "This user has no bio yet." if empty
+ *   Returns 404 if user not found in database
+ */
+
 import { NextResponse } from "next/server"; 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -6,6 +33,14 @@ import { ObjectId } from "mongodb";
 
 export const runtime = "nodejs";
 
+/**
+ * Fetches the current authenticated user's profile with counts and saved albums
+ *
+ * @returns {Promise<NextResponse>} JSON response with user data, counts, and savedAlbums array
+ * @throws {401} If user is not authenticated
+ * @throws {404} If user not found in database
+ * @throws {500} If server error occurs
+ */
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
