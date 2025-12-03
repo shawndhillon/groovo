@@ -1,3 +1,30 @@
+/**
+ * Purpose:
+ *   This is the React provider + hook for managing the user’s saved album library.
+ *
+ * Scope:
+ *   - Stores a normalized in-memory map of saved albums (LibraryMap)
+ *   - Update the state from localStorage on first load
+ *
+ * Role:
+ *   - Immediately updates UI when user adds/removes albums
+ *   - Sends POST/DELETE requests in background
+ *     Outputs the most recent global library state
+ *
+ * Deps:
+ *   - React (useState, useEffect, useContext, useMemo, useCallback, useRef)
+ *   - /api/library (POST for saving, GET for hydration, DELETE for removal)
+ *   - browser localStorage (for logged-out persistence)
+ *
+ * Notes:
+ *   - `hydrated` ensures we don’t write back to localStorage until the initial
+ *     read has completed (prevents overwriting stored data prematurely).
+ *   - LibraryMap is keyed by albumId, enabling O(1) lookup via isSaved().
+ *   - The provider merges server data INTO existing local data, never replacing
+ *     local items blindly; this preserves logged-out library behavior.
+ *   - useLibrary() enforces provider usage by throwing if used outside context.
+ */
+
 "use client";
 
 import {

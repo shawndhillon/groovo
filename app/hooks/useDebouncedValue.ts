@@ -1,3 +1,32 @@
+"use client";
+import { useEffect, useState } from "react";
+/**
+ * Purpose:
+ *   A debounce hook to delay updates to a value until the user stops changing it for a specified amount of time.
+ *
+ * Scope:
+ *   - Used mainly in search-related components to reduce unnecessary API calls.
+ *   - Can be used anywhere a debounced version is needed
+ *
+ * Role:
+ *   - Takes an immediate value (`value`) and returns a delayed version that updates only after `delay` milliseconds with no further changes.
+ *   - Prevents effects from changing really fast during rapid input changes.
+ *   - Improves UX and performance
+ *
+ * Deps:
+ *   - React hooks (`useState`, `useEffect`).
+ *
+ * Notes:
+ *   - Typical use case: search bars (e.g., debounce to 250–300ms).
+ *   - Cleans up timers on component unmount or when value changes.
+ *
+ * Returns:
+ *   {
+ *     debouncedValue: T    // the value updated only after the debounce delay
+ *   }
+ *
+
+
 // hooks/useDebouncedValue.ts
 "use client";
 

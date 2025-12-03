@@ -1,3 +1,15 @@
+/**
+ * Purpose:
+ *   Renders a responsive grid of albums for a given artist.
+ *   Each album links to its dedicated album page.
+ *
+ * Props:
+ *   - albums: Array of album objects containing id, name, images, track count,
+ *     and release date.
+ *
+ *   - Displays a placeholder message if no albums are available.
+ */
+
 "use client";
 
 import Link from "next/link";

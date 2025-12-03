@@ -1,3 +1,33 @@
+/**
+ * Purpose:
+ *   The hook for retrieving and tracking the authenticated user's profile.
+ *
+ * Scope:
+ *   - Used across the application wherever components need to know the logged in user.
+ *   - Calls the `/api/profile/me` route to fetch user identity + profile metadata.
+ *
+ * Role:
+ *   - Fetches the current user's profile (name, email, username, bio, counts).
+ *   - Tracks loading + error states for UI usage.
+ *   - Implements a one-time retry for 401 responses to avoid race conditions during login.
+ *   - Provides a `refresh()` function to re-fetch the user after login/logout/profile updates.
+ *
+ * Deps:
+ *   - React hooks (`useState`, `useEffect`, `useRef`).
+ *   - Internal API route `/api/profile/me` (returns `{ user: {...} }`).
+ *
+ * Notes:
+ *   - `refresh()` resets retry state and forces a new API request.
+ *
+ * Returns:
+ *   {
+ *     user: CurrentUserProfile | null    // null when logged out or error occurred
+ *     isLoading: boolean                 // true during fetch
+ *     errorText: string | null           // network or server errors (not 401)
+ *     refresh: () => Promise<void>       // manually re-fetch the user
+ *   }
+ */
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";

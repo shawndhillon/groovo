@@ -1,3 +1,22 @@
+/**
+ * ArtistHeader Component
+ * ----------------------
+ * Displays the top section of an artist page, including:
+ * - Artist photo
+ * - Name
+ * - Followers count
+ * - Top genres (up to 3)
+ * - Link to the artist's Spotify page
+ * - Back button that uses Next.js router navigation
+ *
+ * Props:
+ * - artist: SpotifyArtist object containing metadata for the selected artist.
+ *
+ * Notes:
+ * - Used by the ArtistPage component.
+ * - Assumes the artist object is already validated and loaded.
+ */
+
 "use client";
 
 import { useRouter } from "next/navigation";

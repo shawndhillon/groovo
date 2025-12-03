@@ -1,3 +1,32 @@
+/**
+ * Purpose:
+ *   Custom hook that is responsible for the dynamic search suggestion dropdown in the SearchBar.
+ *   It debounces the raw input query, and fetches album + user suggestion
+ *
+ * Scope:
+ *   - To fetch album suggestions from `/api/spotify?query=...`
+ *   - To fetch user suggestions from `/api/users/?q=...&limit=5`
+ *   - Runs whenever the debounced query changes (250ms delay)
+ *   - Clears suggestions automatically if the query is empty
+ *
+ * Role:
+ *   - Performs two parallel fetches (albums + users) with separate loading flags
+ *   - Normalizes responses into AlbumHit[] and UserHit[] for the search dropdown UI
+ *   - Clears suggestions automatically if the query is empty
+ *   - Handles API failures by resetting the affected suggestions
+ *
+ * Deps:
+ *   - React (useState, useEffect)
+ *   - useDebouncedValue (custom hook for 250ms debouncing)
+ *   - /api/spotify route (queries Spotify API for album search)
+ *   - /api/users search route (internal user search → { items: UserHit[] })
+ *
+ * Notes:
+ *   - Albums and users load independently, so this allows for partial results, e.g. albums loaded while users are still fetching
+ *   - Returns the debouncedQuery so parent components can detect “no results”
+ *   - Clears local state when query is empty, avoiding stale suggestions
+ */
+
 // hooks/useSearchSuggestions.ts
 "use client";
 

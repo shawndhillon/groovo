@@ -1,3 +1,24 @@
+/**
+ * Purpose:
+ *   Custom React hook for fetching reviews written by a specific user.
+ *
+ * Scope:
+ *   - Used in profile pages and admin/moderator views that need to load a user's reviews
+ *   - Used in the main feed of the home page
+ *
+ * Role:
+ *   - Constructs API request URLs 
+ *   - Normalizes the API response into a typed ReviewApiItem[] array
+ *
+ * Deps:
+ *   - React (useState, useEffect, useRef)
+ *   - Backend route /api/reviews 
+ *
+ * Notes:
+ *   - Aborts previous requests when userId/page/pageSize changes to prevent stale updates
+ *   - If userId is missing, hook enters an "idle" state and returns an empty result set
+ */
+
 // app/hooks/useUserReviews.ts
 "use client";
 

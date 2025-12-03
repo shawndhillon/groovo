@@ -1,3 +1,46 @@
+/**
+ * Purpose:
+ *   Central hook for loading and managing the activity feed in Groovo.
+ *   Supports both "following" and "global" modes
+ *
+ * Scope:
+ *   - Used by the Feed page 
+ *   - Fetches:
+ *       - `/api/feed`   → activity from followed users ("following" mode)
+ *       - `/api/reviews?global=true` → global/public reviews ("global" mode)
+ *   - Performs a secondary batch lookup to populate missing author details
+ *     using `/api/users/batch`.
+ *
+ * Role:
+ *   - Tracks current feed mode (`following` or `global`) and exposes a setter.
+ *   - Loads feed items with proper loading and error states.
+ *   - Detects unauthenticated users and exposes `isAuthed` (null / true / false).
+ *   - Produces a sorted feed (`feedSorted`) ordered by `createdAt` descending.
+ *
+ * Deps:
+ *   - React hooks: useState, useEffect, useMemo.
+ *   - Types: FeedItem, FeedMode, BatchUser from `@/app/types/feed`.
+ *   - Backend routes:
+ *       - `/api/feed`
+ *       - `/api/reviews?global=true&page=1&pageSize=20`
+ *       - `/api/users/batch` (POST with { ids: string[] }).
+ *
+ * Notes:
+ *   - Uses `cache: "no-store"` to avoid stale feed data.
+ *
+ * Returns:
+ *   {
+ *     feedMode: FeedMode                      
+ *     setFeedMode: (mode: FeedMode) => void    
+ *     feed: FeedItem[]                         
+ *     feedSorted: FeedItem[]                   
+ *     feedLoading: boolean                     
+ *     feedError: string | null                
+ *     isAuthed: boolean | null                 
+ *   }
+ */
+
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
