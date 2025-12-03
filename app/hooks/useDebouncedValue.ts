@@ -1,3 +1,5 @@
+"use client";
+import { useEffect, useState } from "react";
 /**
  * Purpose:
  *   A debounce hook to delay updates to a value until the user stops changing it for a specified amount of time.
