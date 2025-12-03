@@ -1,7 +1,40 @@
+/**
+ * Purpose:
+ *   Interactive star rating input component for selecting ratings
+ *
+ * Scope:
+ *   Used in review forms and rating selection interfaces
+ *   Allows users to select a rating by clicking or hovering over stars
+ *
+ * Role:
+ *   Displays clickable star icons for rating selection
+ *   Provides hover feedback to show rating preview
+ *   Supports keyboard navigation and accessibility attributes
+ *   Customizable star count, size, and label
+ *
+ * Deps:
+ *   React useState for hover state management
+ *
+ * Notes:
+ *   Uses ARIA roles (radiogroup, radio) for accessibility
+ *   Hover state shows preview of rating before click
+ *   Stars fill with violet-500 when active, zinc-700 when inactive
+ *   Default max rating is 5 stars
+ */
+
 "use client";
 
 import { useState } from "react";
 
+/**
+ * Props for StarInput component
+ *
+ * @property {number} value - Current selected rating value (1 to max)
+ * @property {(v: number) => void} onChange - Callback when rating is selected
+ * @property {number} [max=5] - Maximum number of stars to display
+ * @property {string} [size="h-5 w-5"] - Tailwind CSS classes for star size
+ * @property {string} [label="Rating"] - ARIA label for accessibility
+ */
 export default function StarInput({
   value,
   onChange,
