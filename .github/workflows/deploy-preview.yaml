@@ -24,6 +24,7 @@ jobs:
       TICKETMASTER_API_SECRET: ${{ secrets.TICKETMASTER_API_SECRET    }}
       SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID    }}
 
+      
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
