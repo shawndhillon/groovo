@@ -47,3 +47,4 @@ next-env.d.ts
 **/debug**
 cookies.txt
 .env*.local
+.env.example

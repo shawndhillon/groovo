@@ -38,8 +38,11 @@ import Header from "./components/Header";
 import FeedReviewCard from "./components/home/FeedReviewCard";
 import TopAlbumsSection from "./components/home/TopAlbumsSection";
 import GenreSelector from "./components/GenreSelector";
+import SearchModal from "./components/SearchModal";
+import MobileMenuDrawer from "./components/MobileMenuDrawer";
 import { useFeed } from "./hooks/useFeed";
 import { getReviewId } from "./utils/feed";
+import { useCurrentUser } from "./hooks/useCurrentUser";
 
 /**
  * Home page component that renders top albums, genre browsing, and user feed
@@ -64,6 +67,12 @@ export default function HomePage() {
   const [genrePage, setGenrePage] = useState(1);
   const [hasMoreAlbums, setHasMoreAlbums] = useState(false);
   const [albumsPerPage, setAlbumsPerPage] = useState(25);
+  const [isSearchOpen, setSearchOpen] = useState(false);
+  const [isMenuOpen, setMenuOpen] = useState(false);
+
+  const { user } = useCurrentUser();
+  const isLoggedIn = !!user;
+
   
   /**
    * Fetches albums for the selected genre when genre, page, or albumsPerPage changes
@@ -139,7 +148,11 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
-      <Header />
+      <Header
+        onOpenSearchModal={() => setSearchOpen(true)}
+        onOpenMenuDrawer={() => setMenuOpen(true)}
+      />
+
       {/* Top releases */}
       <TopAlbumsSection />
 
@@ -399,6 +412,8 @@ export default function HomePage() {
           </ul>
         )}
       </div>
+      <SearchModal open={isSearchOpen} onClose={() => setSearchOpen(false)} />
+      <MobileMenuDrawer open={isMenuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={isLoggedIn} />
     </main>
   );
 }

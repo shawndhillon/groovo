@@ -27,82 +27,87 @@
 "use client";
 
 import Link from "next/link";
+import { Search, Menu, User } from "lucide-react";
 import SearchBar from "./SearchBar";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
 /**
- * Props for Header component
+ * Header
  *
- * @property {boolean} [showSearch=true] - Whether to display the search bar
+ * Now takes two callbacks:
+ *  - onOpenSearchModal()
+ *  - onOpenMenuDrawer()
+ *
+ * These trigger overlays rendered via portal in layout.tsx.
  */
+
 interface HeaderProps {
   showSearch?: boolean;
+  onOpenSearchModal: () => void;
+  onOpenMenuDrawer: () => void;
 }
 
-/**
- * Renders the site header with navigation, search, and authentication
- *
- * @param {HeaderProps} props - Component props
- * @returns {JSX.Element} Header component with navigation and auth links
- */
-export default function Header({showSearch = true}: HeaderProps) {
-  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+export default function Header({
+  showSearch = true,
+  onOpenSearchModal,
+  onOpenMenuDrawer,
+}: HeaderProps) {
+  const { user: currentUser } = useCurrentUser();
   const isLoggedIn = !!currentUser;
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-zinc-900/80 backdrop-blur-md">
+    <header className="sticky top-0 z-[200] w-full bg-zinc-900/80 backdrop-blur-xl border-b border-white/10">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo + Title + Navigation */}
-        <div className="flex items-center gap-2">
-          {/* Logo - clickable link to home */}
+
+        {/* LEFT: Logo */}
+        <div className="flex items-center gap-3">
           <Link href="/">
             <div className="h-6 w-6 rounded-md bg-violet-500" />
           </Link>
-          
-          {/* Site Title - clickable link to home */}
           <Link
             href="/"
-            className="text-lg font-semibold tracking-tight hover:text-violet-400 transition"
+            className="text-lg font-semibold tracking-tight hover:text-violet-400 transition hidden sm:block"
           >
             Groovo
           </Link>
-          
-          {/* Spacer for visual separation */}
-          <div className="w-6" />
-          
-          {/* Events Navigation Link - shows upcoming concerts for reviewed/library artists */}
-          <Link
-            href="/events"
-            className="text-sm text-zinc-400 hover:text-violet-400 transition"
-          >
-            Upcoming Events
-          </Link>
         </div>
 
-        {/* Search Bar */}
+        {/* CENTER (Desktop Search) */}
         {showSearch && (
-          <SearchBar />
+          <div className="hidden md:block flex-1 max-w-xl mx-6">
+            <SearchBar />
+          </div>
         )}
 
-        {/* Right side auth area */}
+        {/* RIGHT: Icons */}
         <div className="flex items-center gap-4">
-          {isUserLoading ? (
-            <span className="text-sm text-zinc-500">…</span>
-          ) : isLoggedIn ? (
-            <>
-              <Link href="/profile" className="text-sm text-zinc-400 hover:text-white transition">
-                Profile
-              </Link>
-              <Link href="/api/auth/signout" className="text-sm text-zinc-400 hover:text-white transition">
-                Sign out
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition">Login</Link>
-              <Link href="/signup" className="text-sm text-zinc-400 hover:text-white transition">Sign up</Link>
-            </>
+
+          {/* Mobile search */}
+          <button
+            className="md:hidden"
+            onClick={onOpenSearchModal}
+          >
+            <Search className="h-6 w-6 text-zinc-300" />
+          </button>
+
+          <Link href="/events" className="hidden md:block text-sm text-zinc-400 hover:text-violet-400 transition">
+            Upcoming Events
+          </Link>
+
+          {/* Profile icon */}
+          {isLoggedIn && (
+            <Link href="/profile">
+              <User className="h-6 w-6 text-zinc-300" />
+            </Link>
           )}
+
+          {/* Menu icon */}
+          <button
+            className="md:hidden"
+            onClick={onOpenMenuDrawer}
+          >
+            <Menu className="h-7 w-7 text-zinc-300" />
+          </button>
         </div>
       </div>
     </header>
