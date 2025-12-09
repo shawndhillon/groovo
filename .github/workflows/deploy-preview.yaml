@@ -8,6 +8,21 @@ on:
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
+    env:
+      MONGODB_DB: ${{ secrets.MONGODB_DB    }}
+      SPOTIFY_REDIRECT_URI: ${{ secrets.SPOTIFY_REDIRECT_URI    }}
+      NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL    }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID    }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET    }}
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET    }}
+      AUTH_TRUST_HOST: ${{ secrets.AUTH_TRUST_HOST    }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI    }}
+      SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET    }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY    }}
+      LASTFM_SHARED_SECRET: ${{ secrets.LASTFM_SHARED_SECRET    }}
+      TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY    }}
+      TICKETMASTER_API_SECRET: ${{ secrets.TICKETMASTER_API_SECRET    }}
+      SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID    }}
 
     steps:
       - name: Checkout repo
