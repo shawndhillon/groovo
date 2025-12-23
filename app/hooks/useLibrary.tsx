@@ -39,6 +39,7 @@ export type LibraryAlbum = {
 };
 
 type LibraryMap = Record<string, LibraryAlbum>;
+
 type Ctx = {
   isSaved: (albumId: string) => boolean;
   albums: LibraryAlbum[];
@@ -47,33 +48,10 @@ type Ctx = {
   clear: () => void;
 };
 
-const STORAGE_KEY = "groovo.library.v1";
 const LibraryCtx = createContext<Ctx | null>(null);
 
 export function LibraryProvider({ children }: { children: React.ReactNode }) {
   const [map, setMap] = useState<LibraryMap>({});
-  const hydrated = useRef(false);
-
-  // localStorage cache (works logged out)
-  useEffect(() => {
-    try {
-      const raw =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem(STORAGE_KEY)
-          : null;
-      if (raw) setMap(JSON.parse(raw));
-    } catch {}
-    hydrated.current = true;
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated.current) return;
-    try {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-      }
-    } catch {}
-  }, [map]);
 
   // server hydrate (if logged in)
   useEffect(() => {
@@ -92,7 +70,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             artists: d.artists,
           };
         }
-        setMap((prev) => ({ ...prev, ...next }));
+        setMap(next);
       } catch {}
     })();
   }, []);

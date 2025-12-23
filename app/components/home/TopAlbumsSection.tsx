@@ -1,7 +1,7 @@
 "use client";
 
 import { useTopAlbumsWeek } from "@/app/hooks/useTopAlbumsWeek";
-import NewReleasesGrid from "./NewReleasesGrid";
+import ResponsiveGridOrCarousel from "./NewReleasesGrid";
 
 export default function TopAlbumsSection() {
   const { albums, isLoading, isError } = useTopAlbumsWeek();
@@ -13,7 +13,7 @@ export default function TopAlbumsSection() {
       {isError ? (
         <p className="text-sm text-red-400">Could not load top albums.</p>
       ) : (
-        <NewReleasesGrid albums={albums} loading={isLoading} />
+        <ResponsiveGridOrCarousel albums={albums} loading={isLoading} />
       )}
     </section>
   );

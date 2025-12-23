@@ -40,6 +40,7 @@ import TopAlbumsSection from "./components/home/TopAlbumsSection";
 import GenreSelector from "./components/GenreSelector";
 import SearchModal from "./components/SearchModal";
 import MobileMenuDrawer from "./components/MobileMenuDrawer";
+
 import { useFeed } from "./hooks/useFeed";
 import { getReviewId } from "./utils/feed";
 import { useCurrentUser } from "./hooks/useCurrentUser";
@@ -148,10 +149,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
-      <Header
-        onOpenSearchModal={() => setSearchOpen(true)}
-        onOpenMenuDrawer={() => setMenuOpen(true)}
-      />
+      <Header onOpenSearchModal={() => setSearchOpen(true)} onOpenMenuDrawer={() => setMenuOpen(true)}/>
 
       {/* Top releases */}
       <TopAlbumsSection />

@@ -38,7 +38,7 @@
 
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -46,6 +46,8 @@ import Header from "@/app/components/Header";
 import UserHeader from "@/app/(routes)/profile/components/UserHeader";
 import AddFavoriteButton from "@/app/(routes)/profile/components/AddFavoriteButton";
 import SavedAlbumsGrid from "@/app/(routes)/profile/components/SavedAlbumsGrid";
+import SearchModal from "@/app/components/SearchModal";
+import MobileMenuDrawer from "@/app/components/MobileMenuDrawer";
 import TopFiveFavoritesView from "./components/TopFiveFavoritesView";
 
 import type { SavedAlbum } from "@/app/utils/albumCollections";
@@ -74,6 +76,12 @@ export default function ProfilePage() {
     loading: reviewsLoading,
     error: reviewsError,
   } = useUserReviews(currentUser?._id ?? null);
+
+  const [isSearchOpen, setSearchOpen] = useState(false);
+  const [isMenuOpen, setMenuOpen] = useState(false);
+
+  const { user } = useCurrentUser();
+  const isLoggedIn = !!user;
 
   // Auth guard: once user loading is resolved, redirect anonymous visitors.
   useEffect(() => {
@@ -118,9 +126,9 @@ export default function ProfilePage() {
   // 4) Authenticated profile layout.
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
-      <Header />
+      <Header onOpenSearchModal={() => setSearchOpen(true)} onOpenMenuDrawer={() => setMenuOpen(true)}/>
 
-      <div className="mx-auto max-w-7xl px-6 pb-12">
+      <div className="mx-auto max-w-7xl py-6 px-6 pb-12">
         {/* User banner: avatar, display name, and profile meta */}
         <UserHeader user={currentUser} loading={false} isSelf />
 
@@ -159,6 +167,8 @@ export default function ProfilePage() {
           />
         </section>
       </div>
+      <SearchModal open={isSearchOpen} onClose={() => setSearchOpen(false)} />
+      <MobileMenuDrawer open={isMenuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={isLoggedIn} />
     </main>
   );
 }

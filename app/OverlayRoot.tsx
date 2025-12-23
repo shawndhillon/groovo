@@ -16,7 +16,7 @@ import { ReactNode, useEffect, useState } from "react";
  * Notes:
  *   Must be client-side only because portals require the DOM.
  */
-export default function OverlayRoot({ children }: { children: ReactNode }) {
+export default function OverlayRoot({ children }: { children?: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);

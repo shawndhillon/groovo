@@ -50,7 +50,7 @@ import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 
 export default function TopFiveFavoritesView({
   userId, // optional: if omitted, API uses the current user
-  title = "Top 5 Favorite Albums",
+  title = "Top 5 Albums",
   isOwner,
 }: {
   userId?: string;

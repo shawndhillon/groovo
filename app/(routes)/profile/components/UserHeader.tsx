@@ -45,8 +45,6 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
 
   // Local representation of the user (kept in sync with parent)
   const [localUser, setLocalUser] = useState(user);
-
-  // Form data used for editing name + bio
   const [formData, setFormData] = useState({
     name: user?.name || "",
     bio: user?.bio || "",
@@ -130,139 +128,131 @@ export default function UserHeader({ user, loading, isSelf }: UserHeaderProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-8 shadow-2xl backdrop-blur">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+    <div className="rounded-2xl p-6 bg-zinc-900/60 border border-white/10 shadow-xl">
+      {/* TOP SECTION — AVATAR + NAME/BIO */}
+      <div className="flex gap-6">
         {/* Avatar */}
-        <div>
+        <div className="flex-shrink-0">
           {localUser.image ? (
             <img
               src={localUser.image}
-              alt={localUser.name || localUser.username || "Profile"}
-              className="h-20 w-20 rounded-full object-cover border-2 border-violet-500/20"
+              alt="Profile"
+              className="h-24 w-24 rounded-full object-cover border-2 border-violet-500/30"
             />
           ) : (
-            <div className="h-20 w-20 rounded-full bg-violet-500/20 flex items-center justify-center border-2 border-violet-500/20">
-              <span className="text-4xl font-semibold text-violet-400">
-                {(localUser.name || localUser.username || "U")[0].toUpperCase()}
+            <div className="h-24 w-24 rounded-full bg-violet-500/20 flex items-center justify-center border border-violet-500/30">
+              <span className="text-3xl text-violet-300 font-bold">
+                {(localUser.name || localUser.username || "U")[0]}
               </span>
             </div>
           )}
         </div>
 
-        {/* User information */}
-        <div className="flex-1">
-          {/* Non-edit mode */}
+        {/* Name, Username, Bio */}
+        <div className="flex-1 flex flex-col justify-center">
           {!isSelf || !isEditing ? (
             <>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {localUser.name || localUser.username || "Unknown User"}
+              <h1 className="text-xl font-semibold tracking-tight">
+                {localUser.name || "Unknown User"}
               </h1>
-              {localUser.username && (
-                <p className="text-zinc-400 mt-1">@{localUser.username}</p>
-              )}
-              <p className="text-zinc-300 mt-2 max-w-md">
+              <p className="text-zinc-400">@{localUser.username}</p>
+
+              <p className="text-zinc-300 mt-2 max-w-sm">
                 {localUser.bio || (
-                  <span className="italic text-zinc-500">
-                    No bio available
-                  </span>
+                  <span className="italic text-zinc-500">No bio available</span>
                 )}
               </p>
             </>
           ) : (
-            /** Edit mode UI */
-            <div className="flex flex-col gap-3 max-w-md mt-1">
+            <div className="flex flex-col gap-3 max-w-sm mt-1">
               <input
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full p-2 rounded bg-zinc-800 border border-zinc-700"
+                className="rounded bg-zinc-800 border border-zinc-700 p-2"
               />
-
               <textarea
                 name="bio"
                 value={formData.bio}
-                onChange={handleChange}
                 rows={3}
-                className="w-full p-2 rounded bg-zinc-800 border border-zinc-700"
+                onChange={handleChange}
+                className="rounded bg-zinc-800 border border-zinc-700 p-2"
               />
-
               {error && <p className="text-red-400 text-sm">{error}</p>}
             </div>
           )}
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="mt-6 flex gap-8 text-center">
-          <div>
-            <div className="text-2xl font-semibold text-violet-400">
-              {localUser.albumsCount || 0}
-            </div>
-            <div className="text-sm text-zinc-400">Albums</div>
-          </div>
+      {/* STATS — Instagram style row */}
+      <div className="flex justify-around text-center mt-6">
+        <div>
+          <p className="text-2xl font-semibold text-violet-400">
+            {localUser.albumsCount || 0}
+          </p>
+          <p className="text-zinc-400 text-sm">Albums</p>
+        </div>
 
-          <div>
-            <div className="text-2xl font-semibold text-violet-400">
-              {localUser.reviewsCount || 0}
-            </div>
-            <div className="text-sm text-zinc-400">Reviews</div>
-          </div>
+        <div>
+          <p className="text-2xl font-semibold text-violet-400">
+            {localUser.reviewsCount || 0}
+          </p>
+          <p className="text-zinc-400 text-sm">Reviews</p>
+        </div>
 
-          <div>
-            <div className="text-2xl font-semibold text-violet-400">
-              {localUser.followersCount || 0}
-            </div>
-            <div className="text-sm text-zinc-400">Followers</div>
-          </div>
+        <div>
+          <p className="text-2xl font-semibold text-violet-400">
+            {localUser.followersCount || 0}
+          </p>
+          <p className="text-zinc-400 text-sm">Followers</p>
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex justify-end mt-4 gap-2">
+      {/* ACTION BUTTONS — Instagram style */}
+      <div className="mt-6 flex gap-3">
         {isSelf ? (
-          /* Self view: Edit + Save UI */
           !isEditing ? (
             <>
-              <ShareButton
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm font-medium text-white bg-zinc-800 hover:bg-zinc-700"
+              >
+                Edit Profile
+              </button>
+               <ShareButton
                 url={`/profile/user/${localUser._id ?? localUser.id}`}
                 label="Share Profile"
                 size="sm"
               />
-              <button
-                onClick={() => setIsEditing(true)}
-                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-800"
-              >
-                Edit
-              </button>
             </>
           ) : (
             <>
               <button
                 onClick={handleSave}
-                disabled={saving}
-                className="rounded-lg px-3 py-1 text-sm bg-green-600 hover:bg-green-500"
+                className="flex-1 rounded-lg bg-green-600 py-2 text-sm font-medium hover:bg-green-500"
               >
                 {saving ? "Saving..." : "Save"}
               </button>
               <button
                 onClick={() => setIsEditing(false)}
-                className="rounded-lg border border-zinc-700 px-3 py-1 text-sm hover:bg-zinc-800"
+                className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm font-medium hover:bg-zinc-800"
               >
                 Cancel
               </button>
             </>
           )
         ) : (
-          /* Public view: Share + Follow */
           <>
-            <ShareButton
-              url={`/profile/user/${localUser.id}`}
-              label="Share Profile"
-              size="sm"
-            />
             <FollowButton
               targetUserId={localUser.id}
               initialFollowing={localUser.viewer?.youFollow}
               initialFollowersCount={localUser.followersCount}
+            />
+
+            <ShareButton
+              url={`/profile/user/${localUser.id}`}
+              label="Share"
+              size="sm"
             />
           </>
         )}

@@ -66,7 +66,7 @@ export default function Header({
           </Link>
           <Link
             href="/"
-            className="text-lg font-semibold tracking-tight hover:text-violet-400 transition hidden sm:block"
+            className="text-lg font-semibold tracking-tight hover:text-violet-400 transition"
           >
             Groovo
           </Link>

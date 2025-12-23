@@ -34,8 +34,11 @@ import Header from "@/app/components/Header";
 import AlbumHeader from "./components/AlbumHeader";
 import CompactTracklist from "./components/CompactTracklist";
 import ReviewSection from "./components/ReviewSection";
+import SearchModal from "@/app/components/SearchModal";
+import MobileMenuDrawer from "@/app/components/MobileMenuDrawer";
 
 import { useAlbum } from "@/app/hooks/useAlbum";
+import { useCurrentUser } from "@/app/hooks/useCurrentUser";
 
 interface AlbumPageProps {
   params: Promise<{ id: string }>;
@@ -43,6 +46,11 @@ interface AlbumPageProps {
 
 export default function AlbumPage({ params }: AlbumPageProps) {
   const [albumId, setAlbumId] = useState<string | null>(null);
+  const [isSearchOpen, setSearchOpen] = useState(false);
+  const [isMenuOpen, setMenuOpen] = useState(false);
+
+  const { user } = useCurrentUser();
+  const isLoggedIn = !!user;
 
   /**
    * Extract the album ID from the params Promise.
@@ -60,8 +68,7 @@ export default function AlbumPage({ params }: AlbumPageProps) {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black text-white">
-      <Header />
-
+      <Header onOpenSearchModal={() => setSearchOpen(true)} onOpenMenuDrawer={() => setMenuOpen(true)}/>
       <div className="mx-auto max-w-7xl px-6 py-6 flex flex-col gap-8">
         {/* Loading State */}
         {isLoading && <div className="text-zinc-400 py-10">Loading album…</div>}
@@ -98,6 +105,8 @@ export default function AlbumPage({ params }: AlbumPageProps) {
           </>
         )}
       </div>
+      <SearchModal open={isSearchOpen} onClose={() => setSearchOpen(false)} />
+      <MobileMenuDrawer open={isMenuOpen} onClose={() => setMenuOpen(false)} isLoggedIn={isLoggedIn} />
     </main>
   );
 }

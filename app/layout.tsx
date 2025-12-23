@@ -36,9 +36,7 @@ export default function RootLayout({
         </LibraryProvider>
 
         {/* GLOBAL OVERLAY PORTAL (modal/menu mount point) */}
-        <OverlayRoot>
-          <></>
-        </OverlayRoot>
+        <OverlayRoot />
       </body>
     </html>
   );
